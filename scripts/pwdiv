@@ -1,0 +1,24 @@
+#!/usr/bin/perl
+# this script divides the first column of 1 file by the first
+#  column of the other file
+# writes the quotient to std out
+my $upfile=$ARGV[0];
+my $downfile=$ARGV[1];
+#my $outfile; ($outfile=$infile) =~ s/\.out/.ac.out/;
+#print "from $infile to $outfile\n";
+open U, $upfile || die "couldn't open $upfile";
+open D, $downfile || die "couldn't open $downfile";
+my $u,$d;
+while (defined($ul=<U>)&&defined($dl=<D>)) # see man perlsyn
+{
+  if ($ul=~/^(\d\S*)\b/)
+  {
+    my $u=$1;
+    if ($dl=~/^(\d\S*)\b/)
+    {
+      my $d = $1;
+      my $q = $u / $d;
+      print "$q\n";
+    }
+  }
+}

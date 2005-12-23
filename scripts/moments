@@ -1,0 +1,60 @@
+#!/usr/bin/perl
+# this script computes first or second moments:
+#  average or variance-covariance matrix
+# of some columns of a file
+# usage:
+#  $0 infile [-m|-v] c0 c1
+# -m, -v for mean or variance
+# operates on columns c0 to c1 (starting from 0)
+my $infile=shift @ARGV;
+my $option=shift @ARGV;
+my $variance = ($option eq "-v");
+my ($c0,$c1) = @ARGV[0,1];
+print "columns $c0 .. $c1\n";
+my @range = ($c0 .. $c1);
+open X, $infile || die "couldn't open $infile";
+my %sumxixj;
+my @sumxi;
+my $count = 0;
+while (<X>)
+{
+  next if /^[^\d+-\.]/;
+  my @allx = split(/[ \t]+/);
+  my @x = @allx[@range];
+  foreach $i (0 .. $#x)
+  { $sumxi[$i] += $x[$i];
+    if ($variance)
+    {
+      foreach $j (0 .. $#x)
+      { $sumxixj{$i,$j} += $x[$i]*$x[$j];
+      }
+    }
+  }
+  ++$count;
+}
+print "(count = $count)\n";
+
+foreach $i (0 .. $#sumxi)
+{ $sumxi[$i] /= $count; }
+
+print "means: ";
+foreach $i (0 .. $#sumxi)
+{ print "$sumxi[$i] "; }
+print "\n";
+
+if ($variance)
+{
+  foreach $i (0 .. $#sumxi)
+  { foreach $j (0 .. $#sumxi)
+    { $sumxixj{$i,$j} /= $count;
+      $sumxixj{$i,$j} -= $sumxi[$i] * $sumxi[$j];
+    }
+  }
+
+  print "covariance matrix:\n";
+  foreach $i (0 .. $#sumxi)
+  { foreach $j (0 .. $#sumxi)
+    { print "$sumxixj{$i,$j} "; }
+    print "\n";
+  }
+}

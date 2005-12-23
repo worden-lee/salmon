@@ -1,0 +1,50 @@
+#!/usr/bin/perl
+# this script makes a .gp that plots 2 columns of .out as phase portrait
+#  along with principal axes of predicted covariance matrix
+#   usage: plot-cov.pl a b filename
+my ($a,$b) = ($ARGV[0],$ARGV[1]);
+my $infile=$ARGV[2];
+my $dataname; ($infile=~/\.([^\.]+)\.out/)&&($dataname=$1);
+my $outfile; ($outfile=$infile) =~ s/\.out/.gp/;
+$outfile =~ s/x\./x${a}x${b}./;
+#if ($dataname == "x") { $outfile =~ s/x\./x0./; }
+my $epsfile; ($epsfile=$outfile) =~ s/\.gp/.eps/;
+my $axesfile; ($axesfile=$infile) =~ s/\.x\./.axes./;
+print "from $infile to $outfile (makes $epsfile)\n";
+#my $n;
+#die 'No n' unless (($outfile=~/n.(\d+)./) && ($n = $1));
+
+my @normal;
+my $thresh;
+my $do_thresh=1;
+{ my $nstr;
+  ($infile =~ /normal.(.*).thresh.(.*).ext/ && (($nstr,$thresh)=($1,$2)))
+    || ($do_thresh=0);
+  @normal = split(/,/,$nstr);
+}
+open GP, ">$outfile";
+print GP "set nokey\n";
+print GP "set parametric\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+#print GP "set pointsize 0.1\n";
+open AXES, $axesfile; # arrow for each of principal axes
+while(<AXES>)
+{
+  next if /^\#/;
+  my @vector = split;
+  print GP "set arrow from 0,0 to $vector[$a-1],$vector[$b-1] lt 1\n";
+}
+if ($do_thresh)
+{ chomp(my $range=`./ranges.pl $infile`);
+  print GP "plot [-10:10] $range ";
+# plot the threshold line
+  print GP "t,($thresh - $normal[0]*t)/$normal[1] w l 1, ";
+}
+else
+{ print GP "plot "; }
+# plot the data points
+print GP "'$infile' using $a:$b w p 3";
+#print GP " title 'x[$a] vs. x[$b]'";
+print GP "\n";
+close GP;

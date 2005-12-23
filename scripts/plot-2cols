@@ -1,0 +1,34 @@
+#!/usr/bin/perl
+# this script makes a .gp that plots 2 columns of .out as phase portrait
+#  usage: plot-2cols.pl a b filename
+#     or  plot-2cols.pl -loglin a b filename
+my $loglin = 0;
+while ($ARGV[0] =~ /^-/)
+{ $_ = shift @ARGV;
+  if (/-loglin/)
+  { $loglin = 1; }
+}
+my ($a,$b) = ($ARGV[0],$ARGV[1]);
+my $infile=$ARGV[2];
+my $dataname; ($infile=~/\.([^\.]+)\.out/)&&($dataname=$1);
+my $outfile;
+if (!$loglin){ ($outfile=$infile) =~ s/\.out/.gp/; }
+else         { ($outfile=$infile) =~ s/\.out/.log.gp/; }
+$outfile =~ s/x\./x${a}x${b}./;
+#if ($dataname == "x") { $outfile =~ s/x\./x0./; }
+my $epsfile; ($epsfile=$outfile) =~ s/\.gp/.eps/;
+print "from $infile to $outfile (makes $epsfile)\n";
+#my $n;
+#die 'No n' unless (($outfile=~/n.(\d+)./) && ($n = $1));
+open GP, ">$outfile";
+print GP "set nokey\n";
+print GP "set parametric\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+print GP "#set pointsize 0.1\n";
+if ($loglin)
+{ print GP "set log y\n"; }
+print GP "plot ";
+print GP "[0:*] '$infile' using $a:$b title 'x[$a] vs. x[$b]' w p 1";
+print GP "\n";
+close GP;

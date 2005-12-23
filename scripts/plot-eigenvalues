@@ -1,0 +1,141 @@
+#!/usr/bin/perl
+# this script plots eigenvalues in the complex plane
+#  whether the format is 2 columns, real and imag
+#  or all values in (re,im) pairs on one line
+# usage: $0 filename [plot title|-c|-bw]
+my $dbg = 0;
+my $infile=shift @ARGV;
+my $outfile; ($outfile=$infile) =~ s/\.out/.gp/;
+my $epsfile; ($epsfile=$outfile) =~ s/\.gp/.eps/;
+print "from $infile to $outfile (makes $epsfile)\n";
+my $showcircle = 0;
+my $oc = 0;
+my $closed = 0;
+my $color = 1;
+my $title = "";
+while ($arg = shift @ARGV)
+{ if ($arg=~/^-c$/)
+  { $showcircle = 1; print "saw $arg option\n"; }
+  elsif ($arg=~/^-bw$/)
+  { $color = 0; print "saw $arg option\n"; }
+  elsif ($arg=~/^-oc/)
+  { $oc = 1; print "saw $arg option\n"; }
+  elsif ($arg=~/^-closed/)
+  { $closed = 1; print "saw $arg option\n"; }
+  else
+  { $title = "$arg"; }
+}
+open IN, "<$infile" || die "opening $infile";
+my @lines = <IN>;
+$dbg && print $#lines+1," line(s)\n";
+open GP, ">$outfile" || die "opening $outfile";
+print GP "#set nokey\n";
+if (!$color)
+{ print GP "set key outside graph 1.2,0.97 samplen 1\n"; }
+print GP "set term postscript eps".($color?" color":"")." solid\n";
+print GP "set output '$epsfile'\n";
+print GP "set pointsize 1\n";
+print GP "set parametric\n";
+#print GP "set size square\n";
+print GP "set size square 0.5,0.5\n";
+if ($title ne "")
+{ print GP "set title '$title'\n"; }
+#print GP "[0:*] '$infile' using 0:1 title 'x[0]' w lp 1";
+
+if ($lines[0] =~ /^\(/)  # (re,im) ...
+{ # we have to go through them all to set the plotting bounds
+  #  equal for x and y
+  my $outside = $showcircle ? 1.2 : 0;
+#  my $outside = 1.2;
+  my $margin = 1.1;
+  foreach (@lines)
+  { my @c = split(/\s+/);
+    foreach (@c)
+    { my ($x,$y) = (/\((.*),(.*)\)/, ($1,$2));
+      $outside = abs($x)*$margin if ($outside < abs($x)*$margin);
+      $outside = abs($y)*$margin if ($outside < abs($y)*$margin);
+    }
+  }
+  print GP
+    "plot [0:2*pi] [-$outside:$outside] [-$outside:$outside]",
+    " cos(t), sin(t) notitle w l,";
+  $dbg && print $lines[0];
+  if ($#lines==0)
+  {
+    my @c = split(/\s+/,$lines[0]);
+    $dbg && print $#c+1," column(s)\n";
+    for ($i = 0; $i <= $#c; ++$i)
+    { if (!$oc)
+      { print GP " '-' title '$i' w p ",$i+1,($i<$#c ? ",":"\n"); }
+      else
+      { print GP " '-' title '$i' w p ",(4+$closed+2*$i),($i<$#c ? ",":"\n"); }
+    }
+    for ($i = 0; $i <= $#c; ++$i)
+    { foreach (@lines)
+      { my @c = split(/\s+/);
+	($c[$i] =~ /\((.*),(.*)\)/) && print GP "$1 $2\n";
+      }
+      print GP "e\n";
+    }
+  }
+  else # more than 1 line, plot beginning, end, line between
+  {
+    my @c0 = split(/\s+/,$lines[0]);
+    my @cn = split(/\s+/,$lines[$#lines]);
+    $dbg && print $#c0+1," column(s)\n";
+    for ($i = 0; $i <= $#c0; ++$i)
+    {
+      my $t0 = ($closed? "notitle": "title '$i'");
+      my $tn = ($closed? "title '$i'": "notitle");
+      if (!$oc)
+      { print GP " '-' notitle w l ",$i+1,",";
+	($c0[$i] =~ /\((.*),(.*)\)/) && (($c01,$c02) = ($1,$2));
+	print GP " $c01, $c02 $t0 w p ",$i+1,",";
+	($cn[$i] =~ /\((.*),(.*)\)/) && (($cn1,$cn2) = ($1,$2));
+	print GP " $cn1, $cn2 $tn w p ",$i+1,($i<$#c0 ? ",":"\n");
+      }
+      else # who knows what -oc does without -bw
+      { print GP " '-' notitle w l 1,";
+	($c0[$i] =~ /\((.*),(.*)\)/) && (($c01,$c02) = ($1,$2));
+	print GP " $c01, $c02 $t0 w p ",(4 + 2*$i),",";
+	($cn[$i] =~ /\((.*),(.*)\)/) && (($cn1,$cn2) = ($1,$2));
+	print GP " $cn1, $cn2 $tn w p ",(5 + 2*$i),($i<$#c0 ? ",":"\n");
+      }
+    }
+    for ($i = 0; $i <= $#c0; ++$i)
+    { foreach (@lines)
+      { my @cl = split(/\s+/);
+	($cl[$i] =~ /\((.*),(.*)\)/) && print GP "$1 $2\n";
+      }
+      print GP "e\n";
+    }
+  }
+}
+else { # re im\n
+  my $outside = 1.2;
+  foreach (@lines)
+  { my ($x,$y) = (/^(.*)\s+(.*)\b/, ($1,$2));
+    $outside = abs($x) if ($outside < abs($x));
+    $outside = abs($y) if ($outside < abs($y));
+  }
+  print GP
+    "plot [0:2*pi] [-$outside:$outside] [-$outside:$outside]",
+    " cos(t), sin(t) notitle w l,";
+  for ($i = 0; $i <= $#lines; ++$i)
+  { if (!$oc)
+    { $lines[$i] =~ /^(.*)\s+(.*)$/ &&
+	print GP " '-' title '$i' w p ",$i+1,($i<$#lines ? ",":"\n");
+    }
+    else
+    { $lines[$i] =~ /^(.*)\s+(.*)$/ &&
+	print GP " '-' title '$i' w p ",(4+$closed+2*$i),($i<$#lines ? ",":"\n");
+    }
+  }
+  for ($i = 0; $i <= $#lines; ++$i)
+  { $lines[$i] =~ /^(.*)\s+(.*)$/ &&
+      print GP "$1 $2\ne\n";
+  }
+#  print GP "plot [0:2*pi] [-1.2:1.2] [-1.2:1.2] cos(t), sin(t) notitle w l,";
+#  print GP " '$infile' notitle w p 1\n";
+}
+close GP;

@@ -1,0 +1,29 @@
+#!/usr/bin/perl
+# this script plots 2 files, 1st column of each,
+#  plot predicted peaks
+if ( $#ARGV != 4 )
+{ die "usage: $0 analytic_transfer transfer_components peaks outfile.gp 'varying parameter'\n\n"; }
+my($antr,$trcomp,$trpk,$outfile) = @ARGV[0..3];
+#$outfile=$ARGV[3];
+($epsfile=$outfile) =~ s/gp/eps/;
+print "from $antr, $trcomp, $trpk to $outfile (makes $epsfile)\n";
+my $T = `wc -l $antr`;
+my $N = `wc -l $trpk`;
+my $pi = 2*atan2(1,0);
+my $conv = 2*$pi/$T;
+open GP, ">$outfile" || die "couldn't open $outfile";
+print GP "set nokey\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+#print GP "set pointsize 0.1\n";
+print GP 'set xtics ("0" 0, "" ',($pi/4),', "pi/2" ',($pi/2),
+  ', "" ',(3*$pi/4),', "pi" ',$pi,', "" ',(5*$pi/4),', "3 pi/2" ',(3*$pi/2),
+  ', "" ',(7*$pi/4),', "2 pi" ',(2*$pi),")\n";
+my $title = $ARGV[ 4 ] . " varying";
+print GP "set title \"$title\"\n";
+print GP "plot '$antr' using (\$0*$conv):1 w l lt 2 lw 5, ";
+for $i (1..$N) {
+  print GP "'$ARGV[1]' using (\$0*$conv):$i w l 1,";
+}
+print GP " '$trpk' w p 1\n";
+close GP;

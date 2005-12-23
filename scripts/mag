@@ -1,0 +1,37 @@
+#!/usr/bin/perl
+# this script transforms a series of columns of complex numbers to just magnitude
+#  input: either n columns of (re,im) or 2n columns of re im
+my $infile=$ARGV[0];
+my $outfile; ($outfile=$infile) =~ s/\.out/.mag.out/;
+print "from $infile to $outfile\n";
+open IN, $infile || die "couldn't open $infile";
+open OUT, ">$outfile" || die "couldn't open $outfile";
+my @y0;
+my $mean;
+while (<IN>)
+{
+#  next if /^\#/;
+    my $parens = 0;
+    if (/^\(/)
+    { $parens = 1; }
+    if ($parens) {
+      my @outcols;
+      for $i (split) {
+	if ($i =~ /^\(([^,]+),([^,\)]+)\)/) {
+	  my $mag = sqrt($1*$1 + $2*$2);
+	  push @outcols, $mag;
+	}
+      }
+      print join("\t",@outcols),"\n";
+      print OUT join("\t",@outcols),"\n";
+    } else {
+      my @cols = split;
+      while (($x = shift @cols) and ($y = shift @cols))
+      {
+	print "$x $y\n";
+	my $mag = sqrt($x*$x + $y*$y);
+	push @outcols, $mag;
+      }
+      print OUT join("\t",@outcols),"\n";
+    }
+}

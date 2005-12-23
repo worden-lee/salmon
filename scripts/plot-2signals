@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+# this script plots 2 files, 1st column of each
+$outfile=$ARGV[2];
+($epsfile=$outfile) =~ s/gp/eps/;
+print "from $ARGV[0], $ARGV[1] to $outfile (makes $epsfile)\n";
+open GP, ">$outfile";
+print GP "set nokey\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+print GP "set pointsize 0.1\n";
+print GP "plot '$ARGV[0]' using 0:1 w lp 3, '$ARGV[1]' using 0:1 w l 2\n";
+close GP;

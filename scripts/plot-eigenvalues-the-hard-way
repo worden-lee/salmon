@@ -1,0 +1,121 @@
+#!/usr/bin/perl
+# this script plots eigenvalues in the complex plane
+#  whether the format is 2 columns, real and imag
+#  or all values in (re,im) pairs on one line
+# usage: $0 filename [plot title]
+my $dbg = 1;
+my $infile=shift @ARGV;
+my $outfile; ($outfile=$infile) =~ s/\.out/.gp/;
+my $epsfile; ($epsfile=$outfile) =~ s/\.gp/.eps/;
+print "from $infile to $outfile (makes $epsfile)\n";
+open IN, "<$infile" || die "opening $infile";
+my @lines = <IN>;
+$dbg && print $#lines+1," line(s)\n";
+open GP, ">$outfile" || die "opening $outfile";
+print GP "#set nokey\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+print GP "set parametric\n";
+print GP "set size square 0.8,0.8\n";
+my $showcircle = 0;
+while ($arg = shift @ARGV)
+{ if($arg=~/^-c$/)
+  { $showcircle = 1; print "saw -c option\n"; }
+  else
+  { print GP "set title '$arg'\n"; }
+}
+#print GP "[0:*] '$infile' using 0:1 title 'x[0]' w lp 1";
+
+if ($lines[0] =~ /^\(/)  # (re,im) ...
+{ # we have to go through them all to set the plotting bounds
+  #  equal for x and y
+  my $outside = $showcircle ? 1.2 : 0;
+  my $margin = 1.1;
+  foreach (@lines)
+  { my @c = split(/\s+/);
+    foreach (@c)
+    { my ($x,$y) = (/\((.*),(.*)\)/, ($1,$2));
+      $outside = abs($x)*$margin if ($outside < abs($x)*$margin);
+      $outside = abs($y)*$margin if ($outside < abs($y)*$margin);
+    }
+  }
+  my $off = 0.05 * $outside;
+  $dbg && print $lines[0];
+  if ($#lines==0)
+  {
+    my @c = split(/\s+/,$lines[0]);
+    $dbg && print $#c+1," column(s)\n";
+    for ($i = 0; $i <= $#c; ++$i)
+    { print GP "set linestyle ",($i+1)," linewidth 2\n"; }
+    print GP
+      "plot [0:1] [-$outside:$outside] [-$outside:$outside]",
+	" cos(2*pi*t), sin(2*pi*t) notitle w l";
+    for ($i = 0; $i <= $#c; ++$i)
+    { foreach (@lines)
+      { my @c = split(/\s+/);
+	if ($c[$i] =~ /\((.*),(.*)\)/)
+	{
+	  print GP ", ",($1-$off),"+2*$off*t,",($2+$off),"-2*$off*t",
+                       " title '",$i,"' w l ls ",($i+1);
+	  print GP ", ",($1-$off),"+2*$off*t,",($2-$off),"+2*$off*t",
+                       " notitle w l ls ",($i+1);
+	}
+      }
+    }
+    print GP "\n";
+  }
+  else # more than 1 line
+  {
+    my @c0 = split(/\s+/,$lines[0]);
+    my @cn = split(/\s+/,$lines[$#lines]);
+    $dbg && print $#c0+1," column(s)\n";
+    for ($i = 0; $i <= $#c0; ++$i)
+    { print GP "set linestyle ",($i+1)," linewidth 2\n"; }
+    print GP
+      "plot [0:1] [-$outside:$outside] [-$outside:$outside]",
+	" cos(2*pi*t), sin(2*pi*t) notitle w l";
+    for ($i = 0; $i <= $#c0; ++$i)
+    { print GP ", '-' title '$i' w l ",$i+1;
+      ($c0[$i] =~ /\((.*),(.*)\)/) && (($c01,$c02) = ($1,$2));
+      print GP ", ",($c01-$off),"+2*$off*t,",($c02+$off),"-2*$off*t",
+	" notitle w l ls ",($i+1);
+      print GP ", ",($c01-$off),"+2*$off*t,",($c02-$off),"+2*$off*t",
+	" notitle w l ls ",($i+1);
+      ($cn[$i] =~ /\((.*),(.*)\)/) && (($cn1,$cn2) = ($1,$2));
+      print GP ", ",($cn1-$off),"+2*$off*t,",($cn2+$off),"-2*$off*t",
+	" notitle w l ls ",($i+1);
+      print GP ", ",($cn1-$off),"+2*$off*t,",($cn2-$off),"+2*$off*t",
+	" notitle w l ls ",($i+1);
+    }
+    print GP "\n";
+    for ($i = 0; $i <= $#c0; ++$i)
+    { foreach (@lines)
+      { my @cl = split(/\s+/);
+	($cl[$i] =~ /\((.*),(.*)\)/) && print GP "$1 $2\n";
+      }
+      print GP "e\n";
+    }
+  }
+}
+else { # re im\n
+  my $outside = 1.2;
+  foreach (@lines)
+  { my ($x,$y) = (/^(.*)\s+(.*)\b/, ($1,$2));
+    $outside = abs($x) if ($outside < abs($x));
+    $outside = abs($y) if ($outside < abs($y));
+  }
+  print GP
+    "plot [0:1] [-$outside:$outside] [-$outside:$outside]",
+    " cos(2*pi*t), sin(2*pi*t) notitle w l";
+  for ($i = 0; $i <= $#lines; ++$i)
+  { if ($lines[$i] =~ /^(.*)\s+(.*)$/)
+    {
+      print GP ", ",($1-$off),"+2*$off*t,",($2+$off),"-2*$off*t",
+	" title '",$i,"' w l ls ",($i+1);
+      print GP ", ",($1-$off),"+2*$off*t,",($2-$off),"+2*$off*t",
+	" notitle w l ls ",($i+1);
+    }
+  }
+  print GP "\n";
+}
+close GP;

@@ -1,0 +1,24 @@
+#!/usr/local/bin/perl
+# usage: make-bins BINSIZE FILES
+#    or  make-bins BINSIZE <FILE
+
+local($binsize) = shift @ARGV;
+local(%freqs);
+local($dbg) = 1;
+
+while (<>)
+{
+  next unless /^[\d+-\.]/;
+  local($number) = $_;
+  # this rounds the number towards zero
+  local($bin) = int($number / $binsize) * $binsize;
+  # this gets it to round down instead
+  if ($number < 0)
+  { $bin -= $binsize; }
+  $freqs{$bin}++;
+}
+
+for $k (sort {$a <=> $b;} keys %freqs)
+{
+    print "$k\t$freqs{$k}\n";
+}

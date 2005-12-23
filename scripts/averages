@@ -1,0 +1,34 @@
+#!/usr/bin/perl
+# average the second column for each shared value of first column
+my $log = 0;
+while ($ARGV[0] =~ /^-/)
+{ $_ = shift @ARGV;
+  if (/-log/) # do geometric mean
+  { $log = 1; }
+  elsif (/-d/) # include std. dev.
+  { $std = 1; }
+}
+while (<ARGV>)
+{
+  next if /^\#/;
+  split;
+  my($x,$y) = @_;
+  if ($log) { $y = log($y); }
+  $sum{$x} += $y;
+  if ($std)
+  { $sqsum{$x} += $y*$y; }
+  $count{$x}++;
+}
+foreach $k (sort {$a <=> $b} keys %sum)
+{
+  my($av) = $sum{$k}/$count{$k};
+  if ($log)
+  { $av = exp($av); }
+  print "$k $av";
+  if ($std)
+  { my($var) = $sqsum{$k}/$count{$k} - $av*$av;
+    # what to do in case of log average?
+    print " ",sqrt($var);
+  }
+  print "\n";
+}

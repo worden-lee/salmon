@@ -1,0 +1,16 @@
+#!/usr/local/bin/perl
+#  read columns of numbers, make a gnuplot range spec. for each column
+while(<ARGV>)
+{
+  my @point = split();
+  foreach $i ($[ .. $#point)
+  {
+    if ($point[$i] < $mins[$i])
+    { $mins[$i] = $point[$i]; }
+    if ($maxs[$i] < $point[$i])
+    { $maxs[$i] = $point[$i]; }
+  }
+}
+foreach $i ($[ .. $#maxs)
+{ print " [$mins[$i]:$maxs[$i]]"; }
+print "\n";

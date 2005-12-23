@@ -1,0 +1,124 @@
+#!/usr/bin/perl
+# this script plots the requested columns
+# usage:
+#  plot-cols.pl [-w {l|p|lp}] [-c ncolors] [-x xcol] [ycols] infile
+#    [-g gpfile] [-e epsfile]
+my $xcol = 0;
+my $with = "w lp 1";
+my @ycols;
+my $all = 0;
+my $colors = 0;
+my $infile, $gpfile, $epsfile;
+my $dbg = 0;
+while (@ARGV)
+{
+  my $arg = shift ARGV;
+  if ($arg =~ /^-d$/)
+  { $dbg = 1;
+    $dbg && print "saw -d option\n";
+  }
+  elsif ($arg =~ /^-x$/)
+  { $xcol = shift ARGV;
+    $dbg && print "saw -x $xcol option\n";
+    --$xcol;
+  }
+  elsif ($arg =~ /^-c$/)
+  { $colors = shift ARGV;
+    $dbg && print "saw -c $colors option\n";
+    --$xcol;
+  }
+  elsif ($arg =~ /^-w$/)
+  { $with = "w ". shift ARGV;
+    $dbg && print "saw -w option ($with)\n";
+  }
+  elsif ($arg =~ /^-g$/)
+  { $gpfile = shift ARGV;
+    $dbg && print "saw -g $gpfile option\n";
+  }
+  elsif ($arg =~ /^-e$/)
+  { $epsfile = shift ARGV;
+    $dbg && print "saw -e $epsfile option\n";
+  }
+  elsif ($arg =~ /^\d+$/)
+  { push @ycols, $arg - 1;
+    $dbg && print "column $arg\n";
+  }
+  elsif ($arg eq "all")
+  { $all = 1;
+    $dbg && print "saw all argument\n";
+  }
+  else
+  { $dbg && print "regular argument $arg\n";
+    $infile = $arg;
+  }
+#  else
+#  { die "usage: $0 filename\n\n"; }
+}
+
+if (!defined $gpfile)
+{ ($gpfile=$infile)=~s/.out$/.gp/; }
+if (!defined $epsfile)
+{ ($epsfile=$gpfile)=~s/.gp$/.eps/; }
+
+print "from $infile to $gpfile (creates $epsfile)\n";
+open IN, "<$infile" || die "couldn't open $infile";
+while(<IN>)
+{
+  next if (!/^[+-\d\.]/); # discard lines that don't start with a number
+  push @lines, $_;
+}
+close IN;
+my @cols = split(/\s+/,$lines[0]);
+if ($all)
+{
+  $dbg && print "\@cols = @cols\n";
+  $dbg && print "#cols = $#cols\n";
+  @ycols = ();
+  foreach $i (0 .. $#cols)
+  { if ($i != $xcol)
+    { push @ycols, $i; }
+  }
+}
+$dbg && print "ycols: @ycols\nxcol: $xcol\nwith: $with\nfile: $infile\ngpfile: $gpfile\nepsfile: $epsfile\n";
+
+open GP, ">$gpfile" || die "couldn't open $gpfile";
+
+print GP "set nokey\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+#my $title = $infile;
+#print GP "set title \"$title\"\n";
+print GP "plot";
+for( $i = 0; $i <= $#lines + $#ycols; ++$i ) {
+  if( $i > 0 ) {
+    print GP ",";
+  }
+  if ($colors)
+  { $with = "w lp ".(1 + ($i % $colors)); }
+  print GP " '-' $with";
+}
+print GP "\n";
+for( $i = $[+1-$#ycols; $i <= $#lines + 1; ++$i ) {
+  if ($i > $[) {
+    my @imcols = split(/\s+/, $lines[$i-1]);
+    my $x = ($xcol >= 0) ? $imcols[$xcol] : $i-1;
+    print GP "$x 0\n";
+  }
+  if ($i <= $#lines) {
+    for ( $j = $[; $j <= $#ycols; ++$j ) {
+      next if $i+$j < $[;
+      last if $i+$j > $#lines;
+      my @ijcols = split(/\s+/, $lines[$i+$j]);
+      my $x = ($xcol >= 0) ? $ijcols[$xcol] : $i+$j;
+      print GP "$x ".$ijcols[$ycols[$j]]."\n";
+    }
+  }
+  if ($i + $#ycols + 1 <= $#lines)
+  {
+    my @iycols = split(/\s+/, $lines[$i+$#ycols+1]);
+    my $x = ($xcol >= 0) ? $iycols[$xcol] : $i+$#ycols+1;
+    print GP "$x ".$iycols[$ycols[$#ycols]]."\n";
+  }
+  print GP "e\n";
+}
+close GP;

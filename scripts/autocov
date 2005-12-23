@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+# this script makes the autocorrelation function from a time series
+#  (from the first column of the input file)
+my $infile=$ARGV[0];
+my $outfile; ($outfile=$infile) =~ s/\.out/.acv.out/;
+print "from $infile to $outfile\n";
+open Y, $infile || die "couldn't open $infile";
+my @y0;
+my $mean;
+while (<Y>)
+{
+#  next if /^\#/;
+  if (/^(\d\S*)\b/)
+  {
+    push @y0, $1;
+    $mean += $1;
+  }
+}
+my $T = 1+$#y0;
+print "T=$T\n";
+$mean /= $T;
+my @c;
+foreach $m (0 .. $T-1)
+{
+   foreach $n (0 .. $T-1-$m)
+   { $c[$m] += ($y0[$n]-$mean)*($y0[$n+$m]-$mean); }
+   $c[$m] /= $T-$m;
+#print "$c[$m]\n";
+}
+open ACV, ">$outfile" || die "couldn't open $outfile";
+foreach $m (0 .. $#c)
+{
+  print ACV "$c[$m]\n";
+}
+close ACV;

@@ -1,0 +1,133 @@
+#!/usr/bin/perl
+# this script plots 2 files, 1st column of each
+my $dbg=0;
+if ( $#ARGV < 3 )
+{ die "usage: $0 observed_transfer [analytic_transfer] [-g outfile.gp|-t title|-bw|-d|-x xfile|-tp transfer_peaks]\n\n"; }
+my $obfile  = shift @ARGV;
+my $anfile;
+my $outfile;
+my $epsfile;
+my $xfile = "";
+my $tpfile = "";
+my $color = 1;
+my $half = 0;
+my $clipy = 0;
+my $title = "";
+my $closed = 0;
+while ($arg = shift @ARGV)
+{ if ($arg=~/^-d$/)
+  { $dbg = 1; }
+  elsif ($arg=~/^-g$/)
+  { $outfile = shift @ARGV; print "saw $arg $outfile option\n"; }
+  elsif ($arg=~/^-bw$/)
+  { $color = 0; print "saw $arg option\n"; }
+  elsif ($arg=~/^-half$/)
+  { $half = 1; print "saw $arg option\n"; }
+  elsif ($arg=~/^-x$/)
+  { $xfile = shift @ARGV; print "saw $arg $xfile option\n"; }
+  elsif ($arg=~/^-tp$/)
+  { $tpfile = shift @ARGV; print "saw $arg $tpfile option\n"; }
+  elsif ($arg=~/^-clip$/)
+  { $clipy = shift @ARGV; print "saw $arg $clipy option\n"; }
+  elsif ($arg=~/^-t$/)
+  { $title = shift @ARGV; print "saw $arg $title option\n"; }
+  elsif ($arg=~/^-closed/)
+  { $closed = 1; print "saw $arg option\n"; }
+  else
+  { $anfile = "$arg"; }
+}
+if ($gpfile eq "")
+{ ($gpfile=$obfile) =~ s/out/gp/; }
+($epsfile=$outfile) =~ s/gp/eps/;
+print "from $obfile".
+  ($anfile ne "" ?", $anfile":"").($xfile ne "" ?", $xfile":"").
+  " to $outfile (makes $epsfile)\n";
+my $T = `wc -l $obfile`;
+my $pi = 2*atan2(1,0);
+my $conv = 2*$pi/$T;
+
+my $xcommands = "";
+
+if ($xfile ne "")
+{
+  open X, "<$xfile" || die "opening $xfile";
+  # assume single line of (re,im) (re,im) ... format
+  my $xs = <X>;
+  close X;
+  my @c = split(/\s+/,$xs);
+  foreach (@c)
+  { my ($x,$y) = (/\((.*),(.*)\)/, ($1,$2));
+    my $ph = atan2($y,$x);
+    my $mag = sqrt($x*$x + $y*$y);
+    push @x, ($ph, $mag); # use push/shift to make a queue
+    $dbg && print "$x $y --> $ph $mag\n";
+  }
+}
+elsif ($tpfile ne "")
+{
+  open X, "<$tpfile" || die "opening $tpfile";
+  # assume series of lines of ph mag\n format
+  my @xs = <X>;
+  close X;
+  foreach (@xs)
+  {
+    push @x, split(/\s+/);
+  }
+  if (defined @x) {
+    my $x = 0;
+    while ($#x >= 0) {
+      my $ph = shift @x;
+      my $mag = shift @x;
+      while ($ph < 0) {
+	$ph += 2*$pi;
+      }
+      #$dbg && print "$ph, $mag\n";
+      $xcommands .= ", $ph,$mag title '$x' w p ".(4+$closed+2*$x);
+      #print GP ", $ph,0 title '$x' w p ",(4+2*$x);
+      ++$x;
+    }
+  }
+}
+
+open GP, ">$outfile" || die "couldn't open $outfile";
+#print GP "set nokey\n";
+print GP "set term postscript eps".($color?" color":"")." solid\n";
+print GP "set parametric\n";
+if ($half)
+{ print GP "set xrange [0:$pi]\n"; }
+else
+{ print GP "set xrange [0:",2*$pi,"]\n"; }
+
+if ($clipy && ($anfile ne ""))
+{ # do a bogus plot to get the y range
+  print GP "set output '/dev/null'\n";
+#  print GP "set output '$epsfile'\n";
+  print GP "set yrange [0:*] writeback\n";
+  print GP "plot '$anfile' using (\$0*$conv):(\$1*$clipy)$xcommands\n";
+#  print GP "plot '$anfile' using 0:(1.2*\$1)\n";
+  print GP "set noautoscale y\n";
+}
+print GP "set output '$epsfile'\n";
+#print GP "set pointsize 0.1\n";
+print GP "set size 0.5,0.5\n"; # was 0.7,0.7
+print GP 'set xtics ("0" 0, "" ',($pi/4),', "pi/2" ',($pi/2),
+  ', "" ',(3*$pi/4),', "pi" ',$pi,', "" ',(5*$pi/4),', "3 pi/2" ',(3*$pi/2),
+  ', "" ',(7*$pi/4),', "2 pi" ',(2*$pi),")\n";
+
+if ($title ne "")
+{ print GP "set title \"$title\"\n"; }
+
+if ($color)
+{ print GP "plot '$obfile' using (\$0*$conv):1 notitle w l 3";
+}
+else
+{ print GP "plot '$obfile' using (\$0*$conv):1 notitle w l";
+}
+if ($anfile ne "") {
+  print GP ", '$anfile' using (\$0*$conv):1 notitle w l lt 1 lw 10";
+  print GP ", '$anfile' using (\$0*$conv):1 notitle w l lt 2 lw 5";
+}
+print GP "$xcommands";
+print GP "\n";
+close GP;
+$dbg && print "done\n";

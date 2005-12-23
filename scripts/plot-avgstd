@@ -1,0 +1,17 @@
+#!/usr/bin/perl
+# one file. columns are x y stddev
+my $infile=$ARGV[0];
+my $outfile;
+my $epsfile; 
+($outfile=$infile) =~ s/\.out/.gp/;
+($epsfile=$outfile) =~ s/\.gp/.eps/;
+print "from $infile to $outfile (makes $epsfile)\n";
+open GP, ">$outfile";
+print GP "set nokey\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+print GP "#set pointsize 0.1\n";
+print GP "plot ";
+print GP "'$infile' with errorbars";
+print GP "\n";
+close GP;

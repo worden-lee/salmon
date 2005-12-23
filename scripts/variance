@@ -1,0 +1,37 @@
+#!/usr/bin/perl
+# this script prints the variance of the first column of a file
+my $sd = 0;
+# -sd flag means print standard deviation instead of variance
+if ($ARGV[0] eq "-sd")
+{ $sd = 1;
+  shift @ARGV;
+}
+my $infile=$ARGV[0];
+#print "from $infile to $outfile\n";
+open Y, $infile || die "couldn't open $infile";
+my @y0;
+my $mean;
+while (<Y>)
+{
+#  next if /^\#/;
+  if (/^([+-\.\d]\S*)\b/)
+  {
+    push @y0, $1;
+    $mean += $1;
+  }
+}
+my $T = 1+$#y0;
+#print "T=$T\n";
+$mean /= $T;
+#print "(mean = $mean) ";
+my $v = 0;
+#print "(y0[0] = $y0[0]) ";
+foreach $i (0 .. $T-1)
+{
+  $v += ($y0[$i] - $mean)*($y0[$i] - $mean);
+}
+$v /= $T;
+if (!$sd)
+{ print "$v\n"; }
+else
+{ print sqrt($v),"\n"; }

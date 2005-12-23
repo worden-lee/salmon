@@ -1,0 +1,17 @@
+#!/usr/bin/perl
+my $infile = shift @ARGV;
+my $mfile = shift @ARGV;
+if ($mfile eq "")
+{ ($mfile=$infile) =~ s/.out/.m/; }
+my $outfile;
+if ($outfile eq "")
+{ ($outfile=$mfile) =~ s/.m/.eps/; }
+
+print "mfile: $mfile\n";
+print "outfile: $outfile\n";
+
+open MF, ">$mfile" || die "couldn't open $mfile";
+print MF "M = load('",$infile,"');\n";
+print MF "colormap(gray(64));\n";
+print MF "saveimage('",$outfile,"',64*M/350000.0,\"ps\")\n";
+close MF

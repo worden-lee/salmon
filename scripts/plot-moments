@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+# this script plots age distribution into a file
+($outfile=$ARGV[0]) =~ s/out/eps/;
+print "from $ARGV[0] to $outfile\n";
+open GP, "|gnuplot";
+print GP "set nokey\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$outfile'\n";
+print GP "set pointsize 0.1\n";
+print GP "#plot 'y2d.out' using 0:($1/$2<1?$2/$1:$1/$2)\n";
+print GP "plot '$ARGV[0]'\n";
+close GP;

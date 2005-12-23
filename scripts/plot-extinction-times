@@ -1,0 +1,93 @@
+#!/usr/bin/perl
+if ($ARGV[0] !~ /^-t$/)
+{
+  # obsfile is required
+  my $obsfile= shift @ARGV;
+  my $anfile;
+  my $gpfile;
+  my $title;
+  my $log = 0;
+  my $angle = 0;
+  my $pi = 2*atan2(1,0);
+  while ($arg = shift @ARGV)
+  {
+    if ($arg =~ /^-g$/)
+    { $gpfile = shift @ARGV; }
+    elsif ($arg =~ /^-log$/)
+    { print "saw -log\n";
+      $log = 1;
+    }
+    elsif ($arg =~ /^-angle$/)
+    { print "saw -angle\n";
+      $angle = 1;
+    }
+    elsif ($arg =~ /^-title$/)
+    { $title = shift @ARGV;
+      print "saw $arg $title\n";
+    }
+    else
+    { $anfile = $arg; }
+  }
+  my $epsfile;
+  ($epsfile=$gpfile) =~ s/\.gp/.eps/;
+  print "from $obsfile",($anfile?", $anfile":""),
+    " to $gpfile (makes $epsfile)\n";
+  open GP, ">$gpfile";
+  print GP "set nokey\n";
+  print GP "set term postscript eps color solid\n";
+#  print GP "set output '$epsfile'\n";
+  print GP "#set pointsize 0.1\n";
+  if ($log)
+  { print GP "set log y\n";
+    #print GP "plot [:*] ";#"[0.01:20000] ";
+  }
+  else
+  { #print GP "plot [:*] ";
+  }
+  if ($angle)
+  { print GP 'set xtics ("0" 0, "" ',($pi/4),', "pi/2" ',($pi/2),
+      ', "" ',(3*$pi/4),', "pi" ',$pi,', "" ',(5*$pi/4),', "3 pi/2" ',(3*$pi/2),
+      ', "" ',(7*$pi/4),', "2 pi" ',(2*$pi),")\n";
+    #print GP "set xrange [0:",(2*$pi),"]\n";
+  }
+  if ($anfile)
+  {
+# try this 2x plot thing
+# first a fake plot to set the vertical range from the errorbars but
+# not from the curve
+    print GP "set yrange [] writeback\n";
+    print GP "set output '/dev/null'\n";
+    print GP "plot '$obsfile' with errorbars\n";
+# now plot both using the vertical range we set above.
+    print GP "set noautoscale y\n";
+  }
+  print GP "set output '$epsfile'\n";
+  if ($title ne "")
+  { print GP "set title '$title'\n"; }
+  print GP "plot ";
+  print GP "'$obsfile' with errorbars";
+  if ($anfile)
+  { print GP ", '$anfile' using 1:2 with lines"; }
+  print GP "\n";
+  close GP;
+}
+else # -t looks like trouble
+{
+  my $infile =$ARGV[1];
+  my $gpfile=$ARGV[2];
+  my $epsfile;
+  ($epsfile=$gpfile) =~ s/\.gp/.eps/;
+  print "from $infile to $gpfile (makes $epsfile)\n";
+  open GP, ">$gpfile";
+  print GP "set nokey\n";
+  print GP "set term postscript eps color solid\n";
+  print GP "set output '$epsfile'\n";
+  print GP "#set pointsize 0.1\n";
+  print GP "plot [:*] [-.5:.5] ";
+  # the following line presumes N=5
+  # it plots an estimate of variance
+#  print GP "'$infile' using 1:(\$4/(2.5*log(2*pi)-\$2)) with lines";
+  print GP "'$infile' using 1:(5*\$4/(log(\$2)-5*log(\$1)-2.5*log(2*pi))) with lines";
+  print GP "\n";
+  close GP;
+}

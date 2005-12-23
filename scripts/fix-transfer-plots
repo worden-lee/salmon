@@ -1,0 +1,14 @@
+#!/usr/bin/perl -p
+# this alters the black and white transfer function plots
+# so that the smooth curve that appears in front of the noisy
+# signal is plotted in white instead of black.
+# very sensitive to changes in the plot-transfers script.
+# assumes the curve in question is preceded by the 'LT1' operation
+# and nothing else is.
+if (/^LT/)
+{
+  if (/^LT1$/)
+  { $_ .= "1 1 1 setrgbcolor\n"; }
+  else
+  { $_ .= "0 0 0 setrgbcolor\n"; }
+}

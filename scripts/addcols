@@ -1,0 +1,27 @@
+#!/usr/bin/perl
+# this script adds columns together
+#  leaves other columns untouched.
+# writes to stdout
+my $infile=$ARGV[0];
+my $colfrom=$ARGV[1];
+my $colto=$ARGV[2];
+if ($colfrom eq "-")
+{ $colfrom = 1; print "colfrom = $colfrom\n"; }
+open I, $infile || die "couldn't open $infile";
+while (<I>)
+{
+    my @cols = split;
+    my $sum = 0;
+    if ($colto eq "-")
+    { $colto = $#cols + 1; print "colto = $colto\n"; }
+    for $i (($colfrom - 1) .. ($colto - 1))
+    {
+	$sum += $cols[$i];
+    }
+    if( $colfrom > 1 ) {
+	print join("\t",$cols[0..($colfrom-2)]),"\t"; }
+    print $sum;
+    if( $colto <= $#cols ) {
+    print "\t", join("\t",$cols[$colto..$#cols]); }
+    print "\n";
+}

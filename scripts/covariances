@@ -1,0 +1,47 @@
+#!/usr/bin/perl
+# this script computes a variance-covariance matrix
+#  of some columns of a file
+my $infile=$ARGV[0];
+my ($c0,$c1) = @ARGV[1,2];
+print "columns $c0 .. $c1\n";
+my @range = ($c0 .. $c1);
+open X, $infile || die "couldn't open $infile";
+my %sumxixj;
+my @sumxi;
+my $count = 0;
+while (<X>)
+{
+  next if /^[^\d+-\.]/;
+  my @allx = split(/[ \t]+/);
+  my @x = @allx[@range];
+  foreach $i (0 .. $#x)
+  { $sumxi[$i] += $x[$i];
+    foreach $j (0 .. $#x)
+    { $sumxixj{$i,$j} += $x[$i]*$x[$j];
+    }
+  }
+  ++$count;
+}
+print "(count = $count)\n";
+
+foreach $i (0 .. $#sumxi)
+{ $sumxi[$i] /= $count; }
+
+print "means: ";
+foreach $i (0 .. $#sumxi)
+{ print "$sumxi[$i] "; }
+print "\n";
+
+foreach $i (0 .. $#sumxi)
+{ foreach $j (0 .. $#sumxi)
+  { $sumxixj{$i,$j} /= $count;
+    $sumxixj{$i,$j} -= $sumxi[$i] * $sumxi[$j];
+  }
+}
+
+print "covariance matrix:\n";
+foreach $i (0 .. $#sumxi)
+{ foreach $j (0 .. $#sumxi)
+  { print "$sumxixj{$i,$j} "; }
+  print "\n";
+}

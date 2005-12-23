@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+# this script removes the dc component by subtracting the mean
+#  (from the first column of the input file)
+my $infile=$ARGV[0];
+my $outfile; ($outfile=$infile) =~ s/\.out/.ac.out/;
+print "from $infile to $outfile\n";
+open Y, $infile || die "couldn't open $infile";
+my @y0;
+my $mean;
+while (<Y>)
+{
+#  next if /^\#/;
+  if (/^(\d\S*)\b/)
+  {
+    push @y0, $1;
+    $mean += $1;
+  }
+}
+my $T = 1+$#y0;
+$mean /= $T;
+
+open OUT, ">$outfile" || die "couldn't open $outfile";
+foreach $m (0 .. $T-1)
+{
+  print OUT ($y0[$m] - $mean),"\n";
+}

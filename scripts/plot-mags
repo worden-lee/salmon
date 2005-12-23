@@ -1,0 +1,48 @@
+#!/usr/bin/perl
+# this script plots magnitudes of, say, eigenvalues
+#  whether the format is 2 columns, real and imag
+#  or all values in (re,im) pairs on one line
+# usage: $0 filename [plot title|-bw]
+my $dbg = 0;
+my $infile=shift @ARGV;
+my $outfile; ($outfile=$infile) =~ s/\.out/.gp/;
+my $epsfile; ($epsfile=$outfile) =~ s/\.gp/.eps/;
+print "from $infile to $outfile (makes $epsfile)\n";
+my $showcircle = 0;
+my $color = 1;
+my $title = "";
+while ($arg = shift @ARGV)
+{ if ($arg=~/^-bw$/)
+  { $color = 0; print "saw -bw option\n"; }
+  else
+  { $title = "$arg"; }
+}
+open IN, "<$infile" || die "opening $infile";
+my @lines = <IN>;
+$dbg && print $#lines+1," line(s)\n";
+open GP, ">$outfile" || die "opening $outfile";
+print GP "set nokey\n";
+print GP "set term postscript eps".($color?" color":"")." solid\n";
+print GP "set output '$epsfile'\n";
+#print GP "set size square\n";
+print GP "set size square 0.5,0.5\n";
+if ($title ne "")
+{ print GP "set title '$title'\n"; }
+
+if ($#lines==0) # only case, currently
+{
+  my @c = split(/\s+/,$lines[0]);
+  print GP "set xtics (";
+  foreach $i (0 .. $#c)
+  { print GP ($i>0?",":""),"\"$i\" $i"; }
+  print GP ")\n";
+  print GP "plot [-.5:".($#c+.5)."] [0:*] '-' title 'x[0]' with steps\n";
+  $dbg && print $#c+1," column(s)\n";
+  print GP "-.5 0\n";
+  for ($i = 0; $i <= $#c; ++$i)
+  {
+    print GP ($i-.5)." $c[$i]\n".($i+.5)." 0\n";
+  }
+  print GP "e\n";
+}
+close GP;

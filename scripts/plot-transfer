@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+#  like plot-1stcol but does the ordinate from 0 to 2pi
+my $infile=$ARGV[0];
+my $dataname; ($infile=~/\.([^\.]+)\.out/)&&($dataname=$1);
+my $outfile; ($outfile=$infile) =~ s/\.out/.gp/;
+#if ($dataname == "x") { $outfile =~ s/x\./x0./; }
+my $epsfile; ($epsfile=$outfile) =~ s/\.gp/.eps/;
+print "from $infile to $outfile (makes $epsfile)\n";
+my $T = `wc -l $infile`;
+my $pi = atan2(1,0);
+my $conv = 2*$pi/$T;
+open GP, ">$outfile";
+print GP "set nokey\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+print GP "#set pointsize 0.1\n";
+print GP 'set xtics ("0" 0, "" ',($pi/4),', "pi/2" ',($pi/2),
+  ', "" ',(3*$pi/4),', "pi" ',$pi,', "" ',(5*$pi/4),', "3 pi/2" ',(3*$pi/2),
+  ', "" ',(7*$pi/4),', "2 pi" ',(2*$pi),")\n";
+print GP "plot ";
+print GP "[0:*] '$infile' using (\$0*$conv):1 title 'transfer' w l 1";
+print GP "\n";
+close GP;

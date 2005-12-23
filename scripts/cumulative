@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+# this script replaces a series of columns with cumulative sums of columns
+#  leaves other columns untouched.
+#  writes to stdout.
+# arguments count columns starting from 1
+my $infile=$ARGV[0];
+my $colfrom=$ARGV[1];
+my $colto=$ARGV[2];
+open I, $infile || die "couldn't open $infile";
+if ($colfrom eq "-")
+{ $colfrom = 0; } #print "colfrom = $colfrom\n"; }
+else
+{ --$colfrom; }
+if ($colto ne "-")
+{ --$colto; }
+while (<I>)
+{
+    my @cols = split;
+    my @cum;
+    my $sum = 0;
+    if ($colto eq "-")
+    { $colto = $#cols; } #print "colto = $colto\n"; }
+    for $i (($colfrom+1) .. ($colto))
+    {
+      $cols[$i] += $cols[$i-1];
+    }
+    print join("\t",@cols), "\n";
+}

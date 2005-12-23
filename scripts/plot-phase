@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+# this script makes a .gp that plots 2 columns of .out as phase portrait
+#  usage: plot-phase.pl [-loglin] a b filename [a b filename ...] gpfile epsfile
+my $loglin = 0; # if 1, set log y
+while ($ARGV[0] =~ /^-/)
+{ $_ = shift @ARGV;
+  if (/-loglin/)
+  { $loglin = 1; }
+}
+my @a, @b, @infile;
+while ($#ARGV >= 3)
+{
+  while ($ARGV[0] =~ /^-/)
+  { $_ = shift @ARGV;
+    if (/-lines/)
+    { push @lines,1; }
+  }
+  if ($#lines <= $#infile) {push @lines,0;}
+  push @a, shift @ARGV;
+  push @b, shift @ARGV;
+  push @infile, shift @ARGV;
+}
+#my ($a,$b) = ($ARGV[0],$ARGV[1]);
+#my $infile=$ARGV[2];
+#my $dataname; ($infile=~/\.([^\.]+)\.out/)&&($dataname=$1);
+my $outfile = shift @ARGV;
+my $epsfile = shift @ARGV;
+print "from ",join(',',@infile)," to $outfile (makes $epsfile)\n";
+#my $n;
+#die 'No n' unless (($outfile=~/n.(\d+)./) && ($n = $1));
+#print "sed 1q $infile[0]\n";
+if(`sed 1q $infile[0]` =~ /\#\s*(\w+)\s*(\w+)\s*/)
+{ (($xlabel,$ylabel)=($1,$2));
+  $xlabel =~ s/\_/ /g; $ylabel =~ s/\_/ /g;
+}
+open GP, ">$outfile";
+print GP "set nokey\n";
+print GP "set parametric\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+print GP "#set pointsize 0.1\n";
+if ($loglin)
+{ print GP "set log y\n"; }
+if ($xlabel)
+{ print GP "set xlabel '$xlabel'\n";
+  print GP "set ylabel '$ylabel'\n";
+}
+print GP "plot [0:*] ";
+foreach $i ($[ .. $#infile)
+{
+  print GP "'$infile[$i]' using $a[$i]:$b[$i] w ",
+    $lines[$i]?"l":"p"," 1";
+  if ($i < $#infile)
+  { print GP ", "; }
+}
+print GP "\n";
+close GP;

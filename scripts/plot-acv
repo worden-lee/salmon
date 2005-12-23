@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+# this script plots autocorrelation fn
+my $infile=$ARGV[0];
+my $outfile; ($outfile=$infile) =~ s/.out/.gp/;
+my $epsfile; ($epsfile=$infile) =~ s/.out/.eps/;
+print "from $infile to $outfile\n";
+my $n;
+die 'No n' unless (($infile=~/n.(\d+)./) && ($n = $1));
+open GP, ">$outfile";
+print GP "set nokey\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+print GP "#set pointsize 0.1\n";
+print GP "plot ";
+#print GP "[0:*] '$infile' title 'c(0,0)[m]' w l 1";
+print GP "[0:40] '$infile' title 'c(0,0)[m]' w l 1";
+#print GP "[0:*] '$infile' using 0:1 title 'c(0,0)[m]' w lp 1";
+#foreach $i (1 .. $n) 
+#{ if ($i > 1) { print GP ','; }
+#  print GP " '$infile' using 0:".($i)." title 'y[$i]' w l $i";
+#}
+print GP "\n";
+close GP;

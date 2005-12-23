@@ -1,0 +1,27 @@
+#!/usr/bin/perl
+# this script plots 2 files, 1st column of each,
+#  plot predicted peaks
+if ( $#ARGV != 4 )
+{ die "usage: $0 observed_transfer analytic_transfer peaks outfile.gp 'varying parameter'\n\n"; }
+$outfile=$ARGV[3];
+($epsfile=$outfile) =~ s/gp/eps/;
+print "from $ARGV[0], $ARGV[1], $ARGV[2] to $outfile (makes $epsfile)\n";
+my $T = `wc -l $ARGV[ 0 ]`;
+my $pi = 2*atan2(1,0);
+my $conv = 2*$pi/$T;
+open GP, ">$outfile" || die "couldn't open $outfile";
+print GP "set nokey\n";
+print GP "set term postscript eps color solid\n";
+print GP "set output '$epsfile'\n";
+#print GP "set pointsize 0.1\n";
+print GP 'set xtics ("0" 0, "" ',($pi/4),', "pi/2" ',($pi/2),
+  ', "" ',(3*$pi/4),', "pi" ',$pi,', "" ',(5*$pi/4),', "3 pi/2" ',(3*$pi/2),
+  ', "" ',(7*$pi/4),', "2 pi" ',(2*$pi),")\n";
+my $d0, $d1, $s0, $s1;
+if ($outfile =~ /d0\.(.*)\.d1\.(.*)\.pd.*s0\.(.*)\.s1\.(.*)\.ps/)
+{ ($d0,$d1,$s0,$s1) = ($1,$2,$3,$4); }
+#my $title = ($d1 > $d0) ? "Delta varying" : "S varying";
+my $title = $ARGV[ 3 ] . " varying";
+print GP "set title \"$title\"\n";
+print GP "plot '$ARGV[0]' using (\$0*$conv):1 w l 3, '$ARGV[1]' using (\$0*$conv):1 w l lt 2 lw 5, '$ARGV[2]' w p 1\n";
+close GP;
