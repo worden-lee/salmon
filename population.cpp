@@ -21,6 +21,7 @@ using std::cerr;
 
 #include <cmath>
 #include <unistd.h>
+#include <stdlib.h>
 
 ostream &operator<<( ostream &out,
                      const Population *somePopulation ) {

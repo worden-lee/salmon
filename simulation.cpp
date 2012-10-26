@@ -30,7 +30,9 @@ using std::ios;
 using std::cout;
 using std::cerr;
 using std::endl;
+#if GNU_OSTREAM
 using std::form;
+#endif
 
 #ifdef NEED_STL_FUNCTION
 #include <stl_function.h>
@@ -1221,11 +1223,12 @@ void Simulation::analytic_transfer
       angle += 2 * M_PI;
     vcl_complex<double> z =
       Lambda[ indices[ i ] ] / abs( Lambda[ indices[ i ] ] );
-    vcl_complex< double > zinv(1.0/z);
-    tpk << angle << ' '
-	<< abs( qU[ indices[ i ] ] * (z / (z - Lambda[ indices[ i ] ])) *
-		( VH[ indices[ i ] ] + zinv * VH1[ indices[ i ] ] ) )
-	<< '\n';
+    vcl_complex<double> zinv(1.0/z);
+		double mag =
+			abs( qU[ indices[ i ] ] * (z / (z - Lambda[ indices[ i ] ])) *
+				( VH[ indices[ i ] ] + zinv * VH1[ indices[ i ] ] ) );
+		if ( !isnan(mag) )
+			tpk << angle << ' ' << mag << '\n';
   }
   //    transfer_peaks << '\n';
   

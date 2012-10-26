@@ -18,6 +18,8 @@ using std::string;
 using std::fstream;
 using std::ios;
 
+#include <stdlib.h>
+
 #include "population.h"
 #include "simulation.h"
 

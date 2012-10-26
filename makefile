@@ -4,9 +4,13 @@
 
 ############### first mechanics  ###################################
 
+# where is the vxl library directory?  Default value defined here,
+# if it's not provided in an environment variable.
+VXL ?= ../../vxl
+
 CXX = g++
 
-CFLAGS += -g -DVNL -Ivxl/core -Ivxl/core/vnl -Ivxl/core/vnl/algo -Ivxl/vcl -Ivxl/lib
+CFLAGS += -g -DVNL -I$(VXL)/core -I$(VXL)/core/vnl -I$(VXL)/core/vnl/algo -I$(VXL)/vcl -I$(VXL)/lib
 
 # different versions of g++ need different flags
 # this test will probably only work on lw's and amh's computers
@@ -22,15 +26,18 @@ endif
 GV = $(shell if [ -e /usr/X11R6/bin/ghostview ]; then echo ghostview; \
 	elif [ -e /usr/bin/kghostview ]; then echo kghostview; fi)
 
-LDFLAGS += -Lvxl/lib -lvnl_algo -lvnl -lvcl -lnetlib
-#LDFLAGS += -Lvxl/lib -lvcl -lvnl -lvnl_algo
+LDFLAGS += -L$(VXL)/lib -lvnl_algo -lvnl -lvcl -lnetlib -lv3p_netlib
+#LDFLAGS += -L$(VXL)/lib -lvcl -lvnl -lvnl_algo
 
-LD_LIBRARY_PATH = vxl/lib
-#LD_LIBRARY_PATH += vxl/lib
+LD_LIBRARY_PATH = $(VXL)/lib
+#LD_LIBRARY_PATH += $(VXL)/lib
 export LD_LIBRARY_PATH
 
-LDPATH += vxl/lib
+LDPATH += $(VXL)/lib
 export LDPATH
+
+# SHELL is important for the _sweep target and some others
+SHELL = /bin/bash
 
 ######## now compiling the program and related rules ##################
 
@@ -1091,7 +1098,7 @@ SHOW_CIRCLE=yes
 ifeq ($(SHOW_CIRCLE),yes)
 CIRCLE_ARG=-c
 endif
-$(SWEEP_OUTDIR)/eigenvalues.gp: $(SWEEP_OUTDIR)/eigenvalues.out
+$(SWEEP_OUTDIR)/eigenvalues.gp: $(SWEEP_OUTDIR)/eigenvalues.out ./scripts/plot-eigenvalues
 	./scripts/plot-eigenvalues $< $(CIRCLE_ARG) $(BW_ARG) $(OC_ARG) $(CLOSED_ARG)
 
 # new version
@@ -1373,7 +1380,7 @@ $(OUTDIR)/transfers.eps : $(OUTDIR)/transfers.unfixed.eps
 else
 TRANSFER_DEST=transfers.gp
 endif
-$(OUTDIR)/$(TRANSFER_DEST): $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out $(OUTDIR)/transfer-peaks.out
+$(OUTDIR)/$(TRANSFER_DEST): $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out $(OUTDIR)/transfer-peaks.out ./scripts/plot-transfers
 #	./scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -tp $(OUTDIR)/transfer-peaks.out -g $@ -half $(BW_ARG)
 	./scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -tp $(OUTDIR)/transfer-peaks.out -g $@ -half $(BW_ARG) -clip $(CLIP_FACTOR) $(CLOSED_ARG)
 #	./scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -g $@ -half $(BW_ARG)
@@ -1383,7 +1390,7 @@ $(OUTDIR)/$(TRANSFER_DEST): $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-t
 #	./scripts/plot-transfers-with-peaks $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out $(OUTDIR)/transfer-peaks.out $(OUTDIR)/transfers.gp N=$(N),S_MEAN=$(S_MEAN),S_VAR=$(S_VARIANCE),AC_MEAN=$(AC_MEAN),AC_VAR=$(AC_VARIANCE),SIGMA=$(SIGMA),Q=$(Q),$(VARYING)
 #endif
 
-$(OUTDIR)/population-fft.gp : $(OUTDIR)/population.fft.mag.out $(OUTDIR)/eigenvalues.out
+$(OUTDIR)/population-fft.gp : $(OUTDIR)/population.fft.mag.out $(OUTDIR)/eigenvalues.out ./scripts/plot-transfers
 	scripts/plot-transfers $(OUTDIR)/population.fft.mag.out -d -x $(OUTDIR)/eigenvalues.out -g $@ $(BW_ARG) -half $(CLOSED_ARG)
 #	scripts/plot-fft $< -g $@
 
@@ -1402,7 +1409,7 @@ PLOT_CLOSED=yes
 ifeq ($(PLOT_CLOSED),yes)
 CLOSED_ARG = -closed
 endif
-$(OUTDIR)/eigenvalues.gp: $(OUTDIR)/eigenvalues.out
+$(OUTDIR)/eigenvalues.gp: $(OUTDIR)/eigenvalues.out ./scripts/plot-eigenvalues
 	./scripts/plot-eigenvalues $< -c $(BW_ARG) $(OC_ARG) $(CLOSED_ARG)
 
 plot-eigenvalues: $(OUTDIR)/eigenvalues.eps $(OUTDIR)/eigenvalues.eps.gv
@@ -1410,13 +1417,13 @@ plot-eigenvalues: $(OUTDIR)/eigenvalues.eps $(OUTDIR)/eigenvalues.eps.gv
 COMPONENT_PLOTS = $(OUTDIR)/transformed-forcing.eps $(OUTDIR)/transformed-weights.eps $(OUTDIR)/mifi.eps
 plot-components: $(COMPONENT_PLOTS) $(COMPONENT_PLOTS:eps=eps.gv)
 
-%/transformed-forcing.gp: %/transformed-forcing.out
+%/transformed-forcing.gp: %/transformed-forcing.out ./scripts/plot-eigenvalues
 	./scripts/plot-eigenvalues $< $(BW_ARG)
 #	./scripts/plot-eigenvalues $< "VH[i]" $(BW_ARG)
 #	gnuplot $(OUTDIR)/transformed-forcing.gp
 #	$(GV) $(OUTDIR)/transformed-forcing.eps &
 
-%/transformed-weights.gp: %/transformed-weights.out
+%/transformed-weights.gp: %/transformed-weights.out ./scripts/plot-eigenvalues
 	./scripts/plot-eigenvalues $< $(BW_ARG)
 #	./scripts/plot-eigenvalues $< "qU[i]" $(BW_ARG)
 #	gnuplot $(OUTDIR)/transformed-weights.gp
@@ -1425,7 +1432,7 @@ plot-components: $(COMPONENT_PLOTS) $(COMPONENT_PLOTS:eps=eps.gv)
 #	gnuplot $(OUTDIR)/mifi.gp
 #	$(GV) $(OUTDIR)/mifi.eps &
 
-%/mifi.gp: %/mifi.out
+%/mifi.gp: %/mifi.out ./scripts/plot-eigenvalues
 	./scripts/plot-eigenvalues $< $(BW_ARG)
 #	./scripts/plot-eigenvalues $< "qU[i] VH[i]" $(BW_ARG)
 
@@ -1465,7 +1472,7 @@ mode%.tail.gp : mode%.tail.out
 %/u.tail.gp : %/u.tail.out
 	./scripts/plot-cols -x 1 all -w l $< $(BW_ARG) -nokey
 
-%/eigenvalues.gp : %/eigenvalues.out
+%/eigenvalues.gp : %/eigenvalues.out ./scripts/plot-eigenvalues
 	./scripts/plot-eigenvalues $< $(BW_ARG) $(OC_ARG) $(CLOSED_ARG)
 
 %/deltas.gp : %/deltas.out
@@ -1501,8 +1508,8 @@ mode%.tail.gp : mode%.tail.out
 %.acv.gp : %.acv.out ./plot-1stcol
 	./scripts/plot-1stcol $< $(BW_ARG)
 
-%.fft.mag.gp : %.fft.mag.out
-	scripts/plot-transfers $< -g $@ $(BW_ARG) -d
+%.fft.mag.gp : %.fft.mag.out ./scripts/plot-transfers
+	./scripts/plot-transfers $< -g $@ $(BW_ARG) -d
 
 %.mag.gp : %.mag.out
 	./scripts/plot-mags $< -bw

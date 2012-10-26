@@ -1,1 +1,109 @@
-NOTE: plot-cols moved to simulation/bin
+#!/usr/bin/perl
+# this script plots the requested columns
+# usage:
+#  plot-cols.pl [-w {l|p|lp}] [-x xcol] [ycols] infile [-g gpfile] [-e epsfile]
+my $xcol = 0;
+my $with = "";
+my @ycols;
+my $all = 0;
+my $infile, $gpfile, $epsfile;
+my $dbg = 0;
+my $color = 1;
+my $small = 0;
+my $key = 1;
+my $using = "";
+#my $title = $infile;
+my $title;
+while (@ARGV)
+{
+  my $arg = shift ARGV;
+  if ($arg =~ /^-d$/)
+  { $dbg = 1;
+    $dbg && print "saw -d option\n";
+  }
+  elsif ($arg =~ /^-x$/)
+  { $xcol = shift ARGV;
+    $dbg && print "saw -x $xcol option\n";
+  }
+  elsif ($arg =~ /^-using$/) # -using overrules -x and y values
+  { $using = shift ARGV;
+    $dbg && print "saw -using $using option\n";
+  }
+  elsif ($arg =~ /^-w$/)
+  { $with = "w ". shift ARGV;
+    $dbg && print "saw -w option ($with)\n";
+  }
+  elsif ($arg =~ /^-g$/)
+  { $gpfile = shift ARGV;
+    $dbg && print "saw -g $gpfile option\n";
+  }
+  elsif ($arg =~ /^-e$/)
+  { $epsfile = shift ARGV;
+    $dbg && print "saw -e $epsfile option\n";
+  }
+  elsif ($arg =~ /^-t$/)
+  { $title = shift ARGV;
+    $dbg && print "saw -t $title option\n";
+  }
+  elsif ($arg=~/^-bw$/)
+  { $color = 0; print "saw $arg option\n"; }
+  elsif ($arg=~/^-small$/)
+  { $small = 1; print "saw $arg option\n"; }
+  elsif ($arg=~/^-nokey$/)
+  { $key = 0; print "saw $arg option\n"; }
+  elsif ($arg =~ /^\d+$/)
+  { push @ycols, $arg;
+    $dbg && print "column $arg\n";
+  }
+  elsif ($arg eq "all")
+  { $all = 1;
+    $dbg && print "saw all argument\n";
+  }
+  else
+  { $dbg && print "regular argument $arg\n";
+    $infile = $arg;
+  }
+#  else
+#  { die "usage: $0 filename\n\n"; }
+}
+if ($all)
+{
+  my $line = `head -1 $infile`;
+  my @cols = split(/\s+/,$line);
+  $dbg && print "\@cols = @cols\n";
+  $dbg && print "#cols = $#cols\n";
+  foreach $i (1 .. ($#cols+1))
+  { if ($i != $xcol)
+    { push @ycols, $i; }
+  }
+}
+if (!defined $gpfile)
+{ ($gpfile=$infile)=~s/.out$/.gp/; }
+if (!defined $epsfile)
+{ ($epsfile=$gpfile)=~s/.gp$/.eps/; }
+$dbg && print "ycols: @ycols\nxcol: $xcol\nwith: $with\nfile: $infile\ngpfile: $gpfile\nepsfile: $epsfile\n";
+print "from $infile to $gpfile (creates $epsfile)\n";
+open GP, ">$gpfile" || die "couldn't open $gpfile";
+print GP "set term postscript eps ",($color?"color solid":""),"\n";
+print GP "set output '$epsfile'\n";
+print GP "set title \"$title\"\n";
+if (!$key)
+{ print GP "set nokey\n"; }
+if ($small)
+{ print GP "set size 0.7,0.7\n"; }
+print GP "plot";
+if ($using ne "") {
+  print GP " '$infile' using $using",
+   ($key ? " title \"$using\"": ""),
+      " $with";
+}
+for( $i = 0; $i <= $#ycols; ++$i ) {
+  if( $i > 0 ) {
+    print GP ",";
+  }
+  print GP " '$infile' using $xcol:$ycols[$i]",
+    ($key ? " title \"$ycols[$i]\"": ""),
+      " $with";
+}
+print GP "\n";
+close GP;

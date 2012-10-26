@@ -82,8 +82,8 @@ elsif ($tpfile ne "")
 	$ph += 2*$pi;
       }
       #$dbg && print "$ph, $mag\n";
-      $xcommands .= ", $ph,$mag title '$x' w p ".(4+$closed+2*$x);
-      #print GP ", $ph,0 title '$x' w p ",(4+2*$x);
+      $xcommands .= ", $ph,$mag title '$x' w p pt ".(4+$closed+2*$x);
+      #print GP ", $ph,0 title '$x' w p pt ",(4+2*$x);
       ++$x;
     }
   }
