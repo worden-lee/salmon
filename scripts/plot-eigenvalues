@@ -88,14 +88,14 @@ if ($lines[0] =~ /^\(/)  # (re,im) ...
       my $t0 = ($closed? "notitle": "title '$i'");
       my $tn = ($closed? "title '$i'": "notitle");
       if (!$oc)
-      { print GP " '-' notitle w l ",$i+1,",";
+      { print GP " '-' notitle w l lt ",$i+1,",";
 	($c0[$i] =~ /\((.*),(.*)\)/) && (($c01,$c02) = ($1,$2));
 	print GP " $c01, $c02 $t0 w p pt ",$i+1,",";
 	($cn[$i] =~ /\((.*),(.*)\)/) && (($cn1,$cn2) = ($1,$2));
 	print GP " $cn1, $cn2 $tn w p pt ",$i+1,($i<$#c0 ? ",":"\n");
       }
       else # who knows what -oc does without -bw
-      { print GP " '-' notitle w l 1,";
+      { print GP " '-' notitle w l lt 1,";
 	($c0[$i] =~ /\((.*),(.*)\)/) && (($c01,$c02) = ($1,$2));
 	print GP " $c01, $c02 $t0 w p pt ",(4 + 2*$i),",";
 	($cn[$i] =~ /\((.*),(.*)\)/) && (($cn1,$cn2) = ($1,$2));
