@@ -8,6 +8,11 @@
 # if it's not provided in an environment variable.
 VXL ?= ../../vxl
 
+# if you want to run make from another directory and use the software
+# here to make output files there, you can do that by having . be there
+# and SALMON_SW_DIR be here.
+SALMON_SW_DIR ?= .
+
 CXX = g++
 
 CFLAGS += -g -DVNL -I$(VXL)/core -I$(VXL)/core/vnl -I$(VXL)/core/vnl/algo -I$(VXL)/vcl -I$(VXL)/lib
@@ -41,28 +46,28 @@ SHELL = /bin/bash
 
 ######## now compiling the program and related rules ##################
 
-default: salmon
+default: $(SALMON_SW_DIR)/salmon
 
-SALMON_OBJS = salmon.o random.o population.o simulation.o rand.o genrand2.o
-.SECONDARY: salmon #don't delete it if it's made incidentally
-salmon: $(SALMON_OBJS)
+SALMON_OBJS = $(SALMON_SW_DIR)/salmon.o $(SALMON_SW_DIR)/random.o $(SALMON_SW_DIR)/population.o $(SALMON_SW_DIR)/simulation.o $(SALMON_SW_DIR)/rand.o $(SALMON_SW_DIR)/genrand2.o
+.SECONDARY: $(SALMON_SW_DIR)/salmon #don't delete it if it's made incidentally
+$(SALMON_SW_DIR)/salmon: $(SALMON_OBJS)
 	$(CXX) $(CFLAGS) -o $@ $(SALMON_OBJS) $(LDFLAGS)
 
-test-rand: test-rand.o rand.o genrand2.o
+$(SALMON_SW_DIR)/test-rand: $(SALMON_SW_DIR)/test-rand.o $(SALMON_SW_DIR)/rand.o $(SALMON_SW_DIR)/genrand2.o
 	$(CXX) $^ -o $@
 
-TARGETS = salmon test-rand
+TARGETS = $(SALMON_SW_DIR)/salmon $(SALMON_SW_DIR)/test-rand
 
 %.o: %.cpp
 	$(CXX) $(CFLAGS) -c $<
 
-salmon.o: population.h simulation.h
+$(SALMON_SW_DIR)/salmon.o: $(SALMON_SW_DIR)/population.h $(SALMON_SW_DIR)/simulation.h
 
-random.o: random.h
+$(SALMON_SW_DIR)/random.o: $(SALMON_SW_DIR)/random.h
 
-population.o: population.h
+$(SALMON_SW_DIR)/population.o: $(SALMON_SW_DIR)/population.h
 
-simulation.o: simulation.h
+$(SALMON_SW_DIR)/simulation.o: $(SALMON_SW_DIR)/simulation.h
 
 .PHONY: clean
 clean: clear-out clear-figures
@@ -268,9 +273,9 @@ SALMON_ARGS += -se
 endif
 
 # call the program and get its output in the right place
-run: salmon
+run: $(SALMON_SW_DIR)/salmon
 	mkdir -p $(OUTDIR)
-	./salmon $(SALMON_ARGS)
+	$(SALMON_SW_DIR)/salmon $(SALMON_ARGS)
 
 # rules expressing how the output files come from running the program
 MODE_NAMES = mode0 mode1 mode3
@@ -297,7 +302,7 @@ endif
 RUN_PRODUCTS = $(addprefix $(OUTDIR)/, $(RUN_PRODUCTS_FN))
 
 #$(OUTDIR)/%.out $(OUTDIR)/%.tex: salmon
-$(RUN_PRODUCTS) : salmon
+$(RUN_PRODUCTS) : $(SALMON_SW_DIR)/salmon
 	$(MAKE) run
 
 # sometimes useful for re-plotting things, or something
@@ -361,11 +366,11 @@ output-variance-gains:
 	  `$(MAKE) --no-print-directory print-analytic-variance-gain` \
 	  `$(MAKE) --no-print-directory print-observed-variance-gain`
 
-print-observed-variance: ./scripts/variance
-	@./scripts/variance $(OUTDIR)/output-quantity.out
+print-observed-variance: $(SALMON_SW_DIR)/scripts/variance
+	@$(SALMON_SW_DIR)/scripts/variance $(OUTDIR)/output-quantity.out
 
 print-observed-variance-gain:
-	@perl -e "print `./scripts/variance $(OUTDIR)/output-quantity.out` / $(VARIANCE), \"\\n\""
+	@perl -e "print `$(SALMON_SW_DIR)/scripts/variance $(OUTDIR)/output-quantity.out` / $(VARIANCE), \"\\n\""
 
 print-analytic-variance: 
 	@cat $(OUTDIR)/analytic-variance.out
@@ -1070,7 +1075,7 @@ collect-eigenvalues.out :
 
 # these duplicate commands for print-%-variance-gain
 collect-observed-variance-gain.out :
-	(echo -n $($(SWEEP_VAR)) ""; perl -e "print `./scripts/variance $(OUTDIR)/output-quantity.out` / $(VARIANCE), \"\\n\"") >> $(SWEEP_OUTDIR)/observed-variance-gain.out
+	(echo -n $($(SWEEP_VAR)) ""; perl -e "print `$(SALMON_SW_DIR)/scripts/variance $(OUTDIR)/output-quantity.out` / $(VARIANCE), \"\\n\"") >> $(SWEEP_OUTDIR)/observed-variance-gain.out
 
 collect-analytic-variance-gain.out :
 	(echo -n $($(SWEEP_VAR)) ""; perl -e "print '`cat $(OUTDIR)/analytic-variance.out`' / $(VARIANCE), \"\\n\"") >> $(SWEEP_OUTDIR)/analytic-variance-gain.out
@@ -1098,8 +1103,8 @@ SHOW_CIRCLE=yes
 ifeq ($(SHOW_CIRCLE),yes)
 CIRCLE_ARG=-c
 endif
-$(SWEEP_OUTDIR)/eigenvalues.gp: $(SWEEP_OUTDIR)/eigenvalues.out ./scripts/plot-eigenvalues
-	./scripts/plot-eigenvalues $< $(CIRCLE_ARG) $(BW_ARG) $(OC_ARG) $(CLOSED_ARG)
+$(SWEEP_OUTDIR)/eigenvalues.gp: $(SWEEP_OUTDIR)/eigenvalues.out $(SALMON_SW_DIR)/scripts/plot-eigenvalues
+	$(SALMON_SW_DIR)/scripts/plot-eigenvalues $< $(CIRCLE_ARG) $(BW_ARG) $(OC_ARG) $(CLOSED_ARG)
 
 # new version
 view-collect: $(COLLECT_PATHS:.out=.eps.gv)
@@ -1242,17 +1247,17 @@ PE_ARG += -title "$(EXT_N_TRIALS) trials"
 endif
 ifeq ($(PLOT_ANALYTIC_EXTINCTION_TIME),yes)
 %/extinction-times.gp : %/observed-extinction-times.avgstd.out %/analytic-extinction-times.out
-	./scripts/plot-extinction-times $^ -g $@ $(PE_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-extinction-times $^ -g $@ $(PE_ARG)
 else
 %/extinction-times.gp : %/observed-extinction-times.avgstd.out
-	./scripts/plot-extinction-times $^ -g $@ $(PE_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-extinction-times $^ -g $@ $(PE_ARG)
 endif
 
 %/combined-extinction-times.out : %/observed-extinction-times.out %/analytic-extinction-times.out
 	paste $^ | sed 's/	/ /g' | cut -d ' ' -f 1,2,4,6 > $@
 
 %/extinction-times-transformed.gp : %/combined-extinction-times.out
-	./scripts/plot-extinction-times -t $< $@
+	$(SALMON_SW_DIR)/scripts/plot-extinction-times -t $< $@
 
 ################### transform files into other forms of data #############
 
@@ -1273,48 +1278,48 @@ more-deltas: $(OUTDIR)/deltas.out $(OUTDIR)/deltas.out.more
 
 %/population.cum.out : %/population.out
 	$(RM) $@
-	./scripts/cumulative $< 2 - >$@
+	$(SALMON_SW_DIR)/scripts/cumulative $< 2 - >$@
 
 %/population.tail.cum.out : %/population.tail.out
 	$(RM) $@
-	./scripts/cumulative $< 2 - >$@
+	$(SALMON_SW_DIR)/scripts/cumulative $< 2 - >$@
 
 %.sum.out : %.out
 	$(RM) $@
-	./scripts/addcols $< 2 - >$@
+	$(SALMON_SW_DIR)/scripts/addcols $< 2 - >$@
 
 %.cum.out : %.out
 	$(RM) $@
-	./scripts/cumulative $< 1 - >$@
+	$(SALMON_SW_DIR)/scripts/cumulative $< 1 - >$@
 
-%.acv.out : %.out ./scripts/autocov # autocovariance
-	./scripts/autocov $<
+%.acv.out : %.out $(SALMON_SW_DIR)/scripts/autocov # autocovariance
+	$(SALMON_SW_DIR)/scripts/autocov $<
 
-%.fft.out : %.out ./scripts/fft
+%.fft.out : %.out $(SALMON_SW_DIR)/scripts/fft
 	$(RM) $@
-	./fft <$< >$@
+	$(SALMON_SW_DIR)/scripts/fft <$< >$@
 
-%.ac.out : %.out ./scripts/ac # remove dc component
-	./scripts/ac $<
+%.ac.out : %.out $(SALMON_SW_DIR)/scripts/ac # remove dc component
+	$(SALMON_SW_DIR)/scripts/ac $<
 
-%.mag.out : %.out ./scripts/mag
-	./scripts/mag $<
+%.mag.out : %.out $(SALMON_SW_DIR)/scripts/mag
+	$(SALMON_SW_DIR)/scripts/mag $<
 
-%.phase.out : %.out ./scripts/phase
-	./scripts/phase $<
+%.phase.out : %.out $(SALMON_SW_DIR)/scripts/phase
+	$(SALMON_SW_DIR)/scripts/phase $<
 
-%.magphase.out : %.out ./scripts/magphase
-	./scripts/magphase $<
+%.magphase.out : %.out $(SALMON_SW_DIR)/scripts/magphase
+	$(SALMON_SW_DIR)/scripts/magphase $<
 
 %.delta-transfer.out : %.x.ac.fft.mag.out %.delta.fft.mag.out # %.delta.ac.fft.mag.out
-	./scripts/pwdiv $^ >$@
+	$(SALMON_SW_DIR)/scripts/pwdiv $^ >$@
 
 %.s-transfer.out : %.x.ac.fft.mag.out %.s.fft.mag.out
-	./scripts/pwdiv $^ >$@
+	$(SALMON_SW_DIR)/scripts/pwdiv $^ >$@
 
 #%.transfer.out : %.x.ac.fft.mag.out %.eps.fft.mag.out
 %.transfer.out : %.x.fft.mag.out %.eps.fft.mag.out
-	./scripts/pwdiv $^ >$@
+	$(SALMON_SW_DIR)/scripts/pwdiv $^ >$@
 
 %.etimes.out:# %,thresh=-1.ext.etime.out
 	cat $(@:.etimes.out=*.etime.out) >$@
@@ -1322,17 +1327,17 @@ more-deltas: $(OUTDIR)/deltas.out $(OUTDIR)/deltas.out.more
 #%.etimes.out: #%.ext.etime.out #fake target but makes it rerun the exe #: %*.etime.out
 
 %.avg.out : %.out
-	./scripts/averages $^ >$@
+	$(SALMON_SW_DIR)/scripts/averages $^ >$@
 
 %.logavg.out : %.out
-	./scripts/averages -log $^ >$@
+	$(SALMON_SW_DIR)/scripts/averages -log $^ >$@
 
 %.avgstd.out : %.out
-	./scripts/averages -d $^ >$@
+	$(SALMON_SW_DIR)/scripts/averages -d $^ >$@
 
 BINSIZE=0.05
 %.bins.out : %.out
-	./scripts/bins $(BINSIZE) <$^ >$@
+	$(SALMON_SW_DIR)/scripts/bins $(BINSIZE) <$^ >$@
 
 %.last1000.out : %.out
 	tail -1000 $< >$@
@@ -1367,41 +1372,41 @@ plot-transfers: $(OUTDIR)/transfers.eps $(OUTDIR)/transfers.eps.gv
 plot-fft: $(OUTDIR)/population-fft.eps.gv
 
 %/population.grey.m : %/population.out
-	./scripts/plot-population-octave $< $@
+	$(SALMON_SW_DIR)/scripts/plot-population-octave $< $@
 
 %/population.tail.grey.m : %/population.tail.out
-	./scripts/plot-population-octave $< $@
+	$(SALMON_SW_DIR)/scripts/plot-population-octave $< $@
 
 CLIP_FACTOR=1.6
 ifeq ($(BW),yes)
 TRANSFER_DEST=transfers.unfixed.gp
 $(OUTDIR)/transfers.eps : $(OUTDIR)/transfers.unfixed.eps
-	scripts/fix-transfer-plots $< >$@
+	$(SALMON_SW_DIR)/scripts/fix-transfer-plots $< >$@
 else
 TRANSFER_DEST=transfers.gp
 endif
-$(OUTDIR)/$(TRANSFER_DEST): $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out $(OUTDIR)/transfer-peaks.out ./scripts/plot-transfers
-#	./scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -tp $(OUTDIR)/transfer-peaks.out -g $@ -half $(BW_ARG)
-	./scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -tp $(OUTDIR)/transfer-peaks.out -g $@ -half $(BW_ARG) -clip $(CLIP_FACTOR) $(CLOSED_ARG)
-#	./scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -g $@ -half $(BW_ARG)
+$(OUTDIR)/$(TRANSFER_DEST): $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out $(OUTDIR)/transfer-peaks.out $(SALMON_SW_DIR)/scripts/plot-transfers
+#	$(SALMON_SW_DIR)/scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -tp $(OUTDIR)/transfer-peaks.out -g $@ -half $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -tp $(OUTDIR)/transfer-peaks.out -g $@ -half $(BW_ARG) -clip $(CLIP_FACTOR) $(CLOSED_ARG)
+#	$(SALMON_SW_DIR)/scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -g $@ -half $(BW_ARG)
 #else
 #$(OUTDIR)/transfers.gp: $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out
-#	./scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -tp $(OUTDIR)/transfer-peaks.out -g $@ -half $(BW_ARG)
-#	./scripts/plot-transfers-with-peaks $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out $(OUTDIR)/transfer-peaks.out $(OUTDIR)/transfers.gp N=$(N),S_MEAN=$(S_MEAN),S_VAR=$(S_VARIANCE),AC_MEAN=$(AC_MEAN),AC_VAR=$(AC_VARIANCE),SIGMA=$(SIGMA),Q=$(Q),$(VARYING)
+#	$(SALMON_SW_DIR)/scripts/plot-transfers $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out -d -tp $(OUTDIR)/transfer-peaks.out -g $@ -half $(BW_ARG)
+#	$(SALMON_SW_DIR)/scripts/plot-transfers-with-peaks $(OUTDIR)/observed-transfer.out $(OUTDIR)/analytic-transfer.out $(OUTDIR)/transfer-peaks.out $(OUTDIR)/transfers.gp N=$(N),S_MEAN=$(S_MEAN),S_VAR=$(S_VARIANCE),AC_MEAN=$(AC_MEAN),AC_VAR=$(AC_VARIANCE),SIGMA=$(SIGMA),Q=$(Q),$(VARYING)
 #endif
 
-$(OUTDIR)/population-fft.gp : $(OUTDIR)/population.fft.mag.out $(OUTDIR)/eigenvalues.out ./scripts/plot-transfers
-	scripts/plot-transfers $(OUTDIR)/population.fft.mag.out -d -x $(OUTDIR)/eigenvalues.out -g $@ $(BW_ARG) -half $(CLOSED_ARG)
+$(OUTDIR)/population-fft.gp : $(OUTDIR)/population.fft.mag.out $(OUTDIR)/eigenvalues.out $(SALMON_SW_DIR)/scripts/plot-transfers
+	$(SALMON_SW_DIR)/scripts/plot-transfers $(OUTDIR)/population.fft.mag.out -d -x $(OUTDIR)/eigenvalues.out -g $@ $(BW_ARG) -half $(CLOSED_ARG)
 #	scripts/plot-fft $< -g $@
 
 #xplot-transfer-components: $(OUTDIR)/analytic-transfer-components.eps
 #	$(GV) $(OUTDIR)/transfer-components.eps &
 
 #%/transfer-components.gp: %/analytic-transfer-components.out
-#	./scripts/plot-transfer-components $^ $(<:transfer-components=analytic-transfer) $< $(<:transfer-components=transfer-peaks. N=$(N),S_MEAN=$(S_MEAN),S_VAR=$(S_VARIANCE),AC_MEAN=$(AC_MEAN),AC_VAR=$(AC_VARIANCE),SIGMA=$(SIGMA),Q=$(Q),$(VARYING)
+#	$(SALMON_SW_DIR)/scripts/plot-transfer-components $^ $(<:transfer-components=analytic-transfer) $< $(<:transfer-components=transfer-peaks. N=$(N),S_MEAN=$(S_MEAN),S_VAR=$(S_VARIANCE),AC_MEAN=$(AC_MEAN),AC_VAR=$(AC_VARIANCE),SIGMA=$(SIGMA),Q=$(Q),$(VARYING)
 
 $(OUTDIR)/transfer-components.gp: $(OUTDIR)/analytic-transfer.out $(OUTDIR)/analytic-transfer-components.out $(OUTDIR)/transfer-peaks.out
-	./scripts/plot-transfer-components $^ $@ N=$(N),S_MEAN=$(S_MEAN),S_VAR=$(S_VARIANCE),AC_MEAN=$(AC_MEAN),AC_VAR=$(AC_VARIANCE),SIGMA=$(SIGMA),Q=$(Q),$(VARYING)
+	$(SALMON_SW_DIR)/scripts/plot-transfer-components $^ $@ N=$(N),S_MEAN=$(S_MEAN),S_VAR=$(S_VARIANCE),AC_MEAN=$(AC_MEAN),AC_VAR=$(AC_VARIANCE),SIGMA=$(SIGMA),Q=$(Q),$(VARYING)
 
 plot-transfer-components: $(OUTDIR)/transfer-components.eps $(OUTDIR)/transfer-components.eps.gv
 
@@ -1409,32 +1414,32 @@ PLOT_CLOSED=yes
 ifeq ($(PLOT_CLOSED),yes)
 CLOSED_ARG = -closed
 endif
-$(OUTDIR)/eigenvalues.gp: $(OUTDIR)/eigenvalues.out ./scripts/plot-eigenvalues
-	./scripts/plot-eigenvalues $< -c $(BW_ARG) $(OC_ARG) $(CLOSED_ARG)
+$(OUTDIR)/eigenvalues.gp: $(OUTDIR)/eigenvalues.out $(SALMON_SW_DIR)/scripts/plot-eigenvalues
+	$(SALMON_SW_DIR)/scripts/plot-eigenvalues $< -c $(BW_ARG) $(OC_ARG) $(CLOSED_ARG)
 
 plot-eigenvalues: $(OUTDIR)/eigenvalues.eps $(OUTDIR)/eigenvalues.eps.gv
 
 COMPONENT_PLOTS = $(OUTDIR)/transformed-forcing.eps $(OUTDIR)/transformed-weights.eps $(OUTDIR)/mifi.eps
 plot-components: $(COMPONENT_PLOTS) $(COMPONENT_PLOTS:eps=eps.gv)
 
-%/transformed-forcing.gp: %/transformed-forcing.out ./scripts/plot-eigenvalues
-	./scripts/plot-eigenvalues $< $(BW_ARG)
-#	./scripts/plot-eigenvalues $< "VH[i]" $(BW_ARG)
+%/transformed-forcing.gp: %/transformed-forcing.out $(SALMON_SW_DIR)/scripts/plot-eigenvalues
+	$(SALMON_SW_DIR)/scripts/plot-eigenvalues $< $(BW_ARG)
+#	$(SALMON_SW_DIR)/scripts/plot-eigenvalues $< "VH[i]" $(BW_ARG)
 #	gnuplot $(OUTDIR)/transformed-forcing.gp
 #	$(GV) $(OUTDIR)/transformed-forcing.eps &
 
-%/transformed-weights.gp: %/transformed-weights.out ./scripts/plot-eigenvalues
-	./scripts/plot-eigenvalues $< $(BW_ARG)
-#	./scripts/plot-eigenvalues $< "qU[i]" $(BW_ARG)
+%/transformed-weights.gp: %/transformed-weights.out $(SALMON_SW_DIR)/scripts/plot-eigenvalues
+	$(SALMON_SW_DIR)/scripts/plot-eigenvalues $< $(BW_ARG)
+#	$(SALMON_SW_DIR)/scripts/plot-eigenvalues $< "qU[i]" $(BW_ARG)
 #	gnuplot $(OUTDIR)/transformed-weights.gp
 #	$(GV) $(OUTDIR)/transformed-weights.eps &
-#	./scripts/plot-eigenvalues $(OUTDIR)/mifi.out "qU[i] VH[i]"
+#	$(SALMON_SW_DIR)/scripts/plot-eigenvalues $(OUTDIR)/mifi.out "qU[i] VH[i]"
 #	gnuplot $(OUTDIR)/mifi.gp
 #	$(GV) $(OUTDIR)/mifi.eps &
 
-%/mifi.gp: %/mifi.out ./scripts/plot-eigenvalues
-	./scripts/plot-eigenvalues $< $(BW_ARG)
-#	./scripts/plot-eigenvalues $< "qU[i] VH[i]" $(BW_ARG)
+%/mifi.gp: %/mifi.out $(SALMON_SW_DIR)/scripts/plot-eigenvalues
+	$(SALMON_SW_DIR)/scripts/plot-eigenvalues $< $(BW_ARG)
+#	$(SALMON_SW_DIR)/scripts/plot-eigenvalues $< "qU[i] VH[i]" $(BW_ARG)
 
 # pattern rule appears to require a command even if null
 view-%: $(OUTDIR)/%.eps $(OUTDIR)/%.eps.gv
@@ -1443,104 +1448,104 @@ view-%: $(OUTDIR)/%.eps $(OUTDIR)/%.eps.gv
 ## some obsolete rules, some not
 
 %/combined-analytic-variance-gain.gp : %/combined-analytic-variance-gain.out
-	./scripts/plot-cols -x 1 2 -w l $< $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 2 -w l $< $(BW_ARG)
 
 %/combined-observed-variance-gain.gp : %/combined-observed-variance-gain.out
-	./scripts/plot-cols -x 1 2 -w l $< $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 2 -w l $< $(BW_ARG)
 
 #%/population.gp : %/population.out
-#	./scripts/plot-cols -x 1 all -w l $< $(BW_ARG) -nokey
+#	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 all -w l $< $(BW_ARG) -nokey
 
 %/population.cum.gp : %/population.cum.out
-	./scripts/plot-cols -x 1 all -w l $< $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 all -w l $< $(BW_ARG)
 
 #%/population.tail.gp : %/population.tail.out
-#	./scripts/plot-cols -x 1 all -w l $< $(BW_ARG) -nokey
+#	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 all -w l $< $(BW_ARG) -nokey
 
 %/population.tail.cum.gp : %/population.tail.cum.out
-	./scripts/plot-cols -x 1 all -w l $< $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 all -w l $< $(BW_ARG)
 
 mode%.tail.gp : mode%.tail.out
-	./scripts/plot-cols -x 1 all -w l $< $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 all -w l $< $(BW_ARG)
 
 %.cum.gp : %.cum.out
-	./scripts/plot-cols -x 1 all -w l $< $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 all -w l $< $(BW_ARG)
 
 %/u.gp : %/u.out
-	./scripts/plot-cols -x 1 all -w l $< $(BW_ARG) -nokey
+	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 all -w l $< $(BW_ARG) -nokey
 
 %/u.tail.gp : %/u.tail.out
-	./scripts/plot-cols -x 1 all -w l $< $(BW_ARG) -nokey
+	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 all -w l $< $(BW_ARG) -nokey
 
-%/eigenvalues.gp : %/eigenvalues.out ./scripts/plot-eigenvalues
-	./scripts/plot-eigenvalues $< $(BW_ARG) $(OC_ARG) $(CLOSED_ARG)
+%/eigenvalues.gp : %/eigenvalues.out $(SALMON_SW_DIR)/scripts/plot-eigenvalues
+	$(SALMON_SW_DIR)/scripts/plot-eigenvalues $< $(BW_ARG) $(OC_ARG) $(CLOSED_ARG)
 
 %/deltas.gp : %/deltas.out
-	./scripts/plot-cols -x 1 2 3 -w l $< $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 2 3 -w l $< $(BW_ARG)
 
 %/extinction-times.gp : %/extinction-times.out
-	./scripts/plot-cols -d -x 1 all -w p $< $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-cols -d -x 1 all -w p $< $(BW_ARG)
 
 %/analytic-variance-components.gp : %/analytic-variance-components.out
-	./scripts/plot-cols -x 1 all -w l $< $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-cols -x 1 all -w l $< $(BW_ARG)
 
 %.cohorts.gp : %.out
-	./scripts/plot-cohorts -c $(AC_MEAN) -x 1 all $< -g $@
+	$(SALMON_SW_DIR)/scripts/plot-cohorts -c $(AC_MEAN) -x 1 all $< -g $@
 
 %.avg.gp : %.avg.out
-	./scripts/plot-2cols 1 2 $<
+	$(SALMON_SW_DIR)/scripts/plot-2cols 1 2 $<
 
 %.avgstd.gp : %.avgstd.out
-	./scripts/plot-avgstd $<
+	$(SALMON_SW_DIR)/scripts/plot-avgstd $<
 
 #%.x0.gp : %.x.out plot-x
 %.x.gp : %.x.out plot-1stcol-1st200
-	./scripts/plot-1stcol-1st200 $<
+	$(SALMON_SW_DIR)/scripts/plot-1stcol-1st200 $<
 
 %.x1x2.gp : %.x.out plot-cov
-	./scripts/plot-cov 1 2 $<
+	$(SALMON_SW_DIR)/scripts/plot-cov 1 2 $<
 
 %.fft.gp : %.fft.out plot-1stcol
-	./scripts/plot-1stcol $< $(BW_ARG) -half
+	$(SALMON_SW_DIR)/scripts/plot-1stcol $< $(BW_ARG) -half
 
 #%.acv.gp : %.acv.out ./plot-acv
 #	./plot-acv $<
 %.acv.gp : %.acv.out ./plot-1stcol
-	./scripts/plot-1stcol $< $(BW_ARG)
+	$(SALMON_SW_DIR)/scripts/plot-1stcol $< $(BW_ARG)
 
-%.fft.mag.gp : %.fft.mag.out ./scripts/plot-transfers
-	./scripts/plot-transfers $< -g $@ $(BW_ARG) -d
+%.fft.mag.gp : %.fft.mag.out $(SALMON_SW_DIR)/scripts/plot-transfers
+	$(SALMON_SW_DIR)/scripts/plot-transfers $< -g $@ $(BW_ARG) -d
 
 %.mag.gp : %.mag.out
-	./scripts/plot-mags $< -bw
+	$(SALMON_SW_DIR)/scripts/plot-mags $< -bw
 
 #%.transfers.gp : %.s-transfer.out %.an-transfer.mag.out
 #%.transfers.gp : %.delta-transfer.out %.an-transfer.mag.out
 #%.transfers.gp : %.transfer.out %.an-transfer.mag.out
-#	./scripts/plot-transfers $^ -g $@
+#	$(SALMON_SW_DIR)/scripts/plot-transfers $^ -g $@
 
 %.transfers.gp : ./plot-transfers
 
 %.transfer.gp : %.transfer.out ./plot-transfer
-	./scripts/plot-transfer $<
+	$(SALMON_SW_DIR)/scripts/plot-transfer $<
 
 %.ratio.eps : %.ratio.out
-	./scripts/plot-ratio $<
+	$(SALMON_SW_DIR)/scripts/plot-ratio $<
 
 %.y.gp : %.y.out plot-y
-	./scripts/plot-y $<
+	$(SALMON_SW_DIR)/scripts/plot-y $<
 
 %.etimes.gp : %.etimes.out %.etimes.avg.out
-	./scripts/plot-phase 1 2 $< -lines 1 2 $(<:out=avg.out) \
+	$(SALMON_SW_DIR)/scripts/plot-phase 1 2 $< -lines 1 2 $(<:out=avg.out) \
 		$@ $(@:gp=eps)
 #	./plot-2cols 1 2 $<
 
 %.etimes.log.gp : %.etimes.out %.etimes.logavg.out
-	./scripts/plot-phase -loglin 1 2 $< -lines 1 2 $(<:out=logavg.out) \
+	$(SALMON_SW_DIR)/scripts/plot-phase -loglin 1 2 $< -lines 1 2 $(<:out=logavg.out) \
 		$@ $(@:gp=eps)
 
 ## not sure what should be the default plot for just any old .out file
 %.gp : %.out
-	./scripts/plot-cols all -w l $< $(BW_ARG) -nokey
-#	./scripts/plot-1stcol $< $(BW_ARG)
-#	./scripts/plot-2cols 1 2 $<
+	$(SALMON_SW_DIR)/scripts/plot-cols all -w l $< $(BW_ARG) -nokey
+#	$(SALMON_SW_DIR)/scripts/plot-1stcol $< $(BW_ARG)
+#	$(SALMON_SW_DIR)/scripts/plot-2cols 1 2 $<
