@@ -282,9 +282,13 @@ run: $(SALMON_SW_DIR)/salmon
 	$(SALMON_SW_DIR)/salmon $(SALMON_ARGS)
 
 # rules expressing how the output files come from running the program
+ifeq (1,0) # modes are not currently being generated
 MODE_NAMES = mode0 mode1 mode3
 ifneq ($(N),4)
 MODE_NAMES += mode4
+endif
+else
+MODE_NAMES =
 endif
 # this list can easily get out of date, may cause some confusion
 RUN_PRODUCTS_FN = analytic-extinction-time.out analytic-variance-components.out\
@@ -305,7 +309,6 @@ RUN_PRODUCTS_FN += analytic-transfer-components.out\
 endif
 RUN_PRODUCTS = $(addprefix $(OUTDIR)/, $(RUN_PRODUCTS_FN))
 
-#$(OUTDIR)/%.out $(OUTDIR)/%.tex: salmon
 $(RUN_PRODUCTS) : $(SALMON_SW_DIR)/salmon
 	$(MAKE) run
 
