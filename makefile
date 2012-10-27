@@ -11,6 +11,10 @@ VXL ?= ../../vxl
 # if you want to run make from another directory and use the software
 # here to make output files there, you can do that by having . be there
 # and SALMON_SW_DIR be here.
+# We do that on the salmon wiki, by having SALMON_SW_DIR set in the
+# environment, and a directory with a makefile that says 
+# "include $(SALMON_SW_DIR)/makefile".  That lets it use these rules and
+# programs in this directory to make output files in its directory.
 SALMON_SW_DIR ?= .
 
 CXX = g++
@@ -18,7 +22,8 @@ CXX = g++
 CFLAGS += -g -DVNL -I$(VXL)/core -I$(VXL)/core/vnl -I$(VXL)/core/vnl/algo -I$(VXL)/vcl -I$(VXL)/lib
 
 # different versions of g++ need different flags
-# this test will probably only work on lw's and amh's computers
+# this was probably only needed on lw's and amh's computers for a while
+# a long time ago
 GXX_VERSION = $(shell g++ -dumpversion)
 ifeq ($(GXX_VERSION),2.96)
 CFLAGS += -DNEED_STL_FUNCTION -DGNU_OSTREAM=1
@@ -28,14 +33,13 @@ endif
 
 # this one isn't so robust either
 # what program to view eps files with
+# only needed when changing and debugging these processes
 GV = $(shell if [ -e /usr/X11R6/bin/ghostview ]; then echo ghostview; \
 	elif [ -e /usr/bin/kghostview ]; then echo kghostview; fi)
 
 LDFLAGS += -L$(VXL)/lib -lvnl_algo -lvnl -lvcl -lnetlib -lv3p_netlib
-#LDFLAGS += -L$(VXL)/lib -lvcl -lvnl -lvnl_algo
 
 LD_LIBRARY_PATH = $(VXL)/lib
-#LD_LIBRARY_PATH += $(VXL)/lib
 export LD_LIBRARY_PATH
 
 LDPATH += $(VXL)/lib

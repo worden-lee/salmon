@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 # this script plots the requested columns
 # usage:
-#  plot-cols.pl [-w {l|p|lp}] [-c ncolors] [-x xcol] [ycols] infile
+#  plot-cohorts [-w {l|p|lp}] [-c ncolors] [-x xcol] [ycols] infile
 #    [-g gpfile] [-e epsfile]
 my $xcol = 0;
-my $with = "w lp 1";
+my $with = "w lp lt 1 pt 1";
 my @ycols;
 my $all = 0;
 my $colors = 0;
@@ -94,7 +94,7 @@ for( $i = 0; $i <= $#lines + $#ycols; ++$i ) {
     print GP ",";
   }
   if ($colors)
-  { $with = "w lp ".(1 + ($i % $colors)); }
+  { $with = "w lp lt ".(1 + ($i % $colors)); }
   print GP " '-' $with";
 }
 print GP "\n";
